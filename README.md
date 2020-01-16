@@ -2,6 +2,8 @@
     <img src="img/fig.logo.png" alt="fig" title="fig" height="384" />
 </p>
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/kkyr/fig)](https://goreportcard.com/report/github.com/kkyr/fig)
+
 # fig
 
 fig loads configuration files into Go structs with extra juice for validating fields and setting defaults.
