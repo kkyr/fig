@@ -3,6 +3,8 @@
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kkyr/fig)](https://goreportcard.com/report/github.com/kkyr/fig)
+[![Build Status](https://travis-ci.org/kkyr/fig.svg?branch=master)](https://travis-ci.org/kkyr/fig)
+[![License](https://img.shields.io/github/license/kkyr/fig)](https://github.com/kkyr/fig/blob/master/LICENSE)
 
 # fig
 
