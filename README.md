@@ -2,12 +2,14 @@
     <img src="img/fig.logo.png" alt="fig" title="fig" height="384" />
 </p>
 
-[![GoDoc](https://godoc.org/github.com/kkyr/fig?status.svg)](https://godoc.org/github.com/kkyr/fig)
-[![Build Status](https://travis-ci.org/kkyr/fig.svg?branch=master)](https://travis-ci.org/kkyr/fig)
-![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/kkyr/fig)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kkyr/fig)](https://goreportcard.com/report/github.com/kkyr/fig)
-[![Coverage Status](https://coveralls.io/repos/github/kkyr/fig/badge.svg?branch=master)](https://coveralls.io/github/kkyr/fig?branch=master)
-[![License](https://img.shields.io/github/license/kkyr/fig)](https://github.com/kkyr/fig/blob/master/LICENSE)
+<p align="center">
+    <a href="https://godoc.org/github.com/kkyr/fig"><img src="https://godoc.org/github.com/kkyr/fig?status.svg" alt="godoc" title="godoc"/></a>
+    <a href="https://travis-ci.org/kkyr/fig"><img src="https://travis-ci.org/kkyr/fig.svg?branch=master" alt="build status" title="build status"/></a>
+    <a href="https://github.com/kkyr/fig/releases"><img src="https://img.shields.io/github/v/tag/kkyr/fig" alt="semver tag" title="semver tag"/></a>
+    <a href="https://goreportcard.com/report/github.com/kkyr/fig"><img src="https://goreportcard.com/badge/github.com/kkyr/fig" alt="go report card" title="go report card"/></a>
+    <a href="https://coveralls.io/github/kkyr/fig?branch=master"><img src="https://coveralls.io/repos/github/kkyr/fig/badge.svg?branch=master" alt="coverage status" title="coverage status"/></a>
+    <a href="https://github.com/kkyr/fig/blob/master/LICENSE"><img src="https://img.shields.io/github/license/kkyr/fig" alt="license" title="license"/></a>
+</p>
 
 # fig
 
