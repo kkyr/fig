@@ -1,0 +1,48 @@
+kind = "Pod"
+
+[metadata]
+name = "redis"
+master = true
+
+[spec]
+
+  [[spec.containers]]
+  name = "redis"
+  image = "redis:5.0.4"
+  command = [
+    "redis-server",
+    "/redis-master/redis.conf"
+  ]
+
+    [spec.containers.resources]
+
+      [spec.containers.resources.limits]
+      cpu = "0.1"
+
+    [[spec.containers.env]]
+    name = "MASTER"
+    value = "true"
+
+    [[spec.containers.ports]]
+    containerPort = 6379.0
+
+    [[spec.containers.volumeMounts]]
+    mountPath = "/redis-master-data"
+    name = "data"
+
+    [[spec.containers.volumeMounts]]
+    mountPath = "/redis-master"
+    name = "config"
+
+  [[spec.volumes]]
+  name = "data"
+
+  [[spec.volumes]]
+  name = "config"
+
+    [spec.volumes.configMap]
+    name = "example-redis-config"
+
+      [[spec.volumes.configMap.items]]
+      key = "redis-config"
+      path = "redis.conf"

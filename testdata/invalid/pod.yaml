@@ -1,0 +1,31 @@
+apiVersion:
+metadata:
+  name: redis
+spec:
+  containers:
+    - name: redis
+      command:
+        - redis-server
+        - "/redis-master/redis.conf"
+      env:
+        - name: MASTER
+          value: "true"
+      ports:
+        - containerPort: 6379
+      resources:
+        limits:
+          cpu: "0.1"
+      volumeMounts:
+        - mountPath: /redis-master-data
+          name: data
+        - mountPath: /redis-master
+          name: config
+  volumes:
+    - name: data
+      configMap:
+        name: example-data
+    - configMap:
+        name: example-redis-config
+        items:
+          - key: redis-config
+            path: redis.conf

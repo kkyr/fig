@@ -1,0 +1,6 @@
+{
+	"host": "0.0.0.0",
+	"logger": {
+		"log_level": "debug"
+	}
+}
