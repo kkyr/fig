@@ -32,9 +32,13 @@ import (
 )
 
 const (
-	DefaultFilename   = "config.yaml"
-	DefaultDir        = "."
-	DefaultTag        = "fig"
+	// DefaultFilename is the default filename of the config file that fig looks for.
+	DefaultFilename = "config.yaml"
+	// DefaultDir is the default directory that fig searches in for the config file.
+	DefaultDir = "."
+	// DefaultTag is the default struct tag name that fig uses for field metadata.
+	DefaultTag = "fig"
+	// DefaultTimeLayout is the default time layout that fig uses to parse times.
 	DefaultTimeLayout = time.RFC3339
 )
 
