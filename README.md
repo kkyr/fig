@@ -2,11 +2,12 @@
     <img src="img/fig.logo.png" alt="fig" title="fig" height="384" />
 </p>
 
+[![GoDoc](https://godoc.org/github.com/kkyr/fig?status.svg)](https://godoc.org/github.com/kkyr/fig)
 [![Build Status](https://travis-ci.org/kkyr/fig.svg?branch=master)](https://travis-ci.org/kkyr/fig)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/kkyr/fig)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kkyr/fig)](https://goreportcard.com/report/github.com/kkyr/fig)
 [![Coverage Status](https://coveralls.io/repos/github/kkyr/fig/badge.svg?branch=master)](https://coveralls.io/github/kkyr/fig?branch=master)
 [![License](https://img.shields.io/github/license/kkyr/fig)](https://github.com/kkyr/fig/blob/master/LICENSE)
-[![GoDoc](https://godoc.org/github.com/kkyr/fig?status.svg)](https://godoc.org/github.com/kkyr/fig)
 
 # fig
 
