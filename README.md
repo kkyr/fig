@@ -94,7 +94,7 @@ fig.Load(&cfg,
 
 ## Usage
 
-See [godoc] for detailed usage documentation.
+See [godoc](https://godoc.org/github.com/kkyr/fig) for detailed usage documentation.
 
 ## Contributing
 
