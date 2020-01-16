@@ -1,5 +1,5 @@
 /*
-Package fig provides a mechanism for loading configuration files into structs.
+Package fig loads configuration files into Go structs with extra juice for validating fields and setting defaults.
 
 Config files may be defined in in yaml, json or toml format.
 
