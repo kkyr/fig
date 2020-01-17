@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="img/fig.logo.png" alt="fig" title="fig" width="384px" height="384px" class="img-responsive" />
+    <img src="img/fig.logo.png" alt="fig" title="fig" class="img-responsive" />
 </p>
 
 <p align="center">
