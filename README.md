@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="img/fig.logo.png" alt="fig" title="fig" height="384" />
+    <img src="img/fig.logo.png" alt="fig" title="fig" height="384" width="384" />
 </p>
 
 <p align="center">
@@ -13,25 +13,21 @@
 
 # fig
 
-fig loads configuration files into Go structs with extra juice for validating fields and setting defaults.
+fig loads your config file into a struct with additional support for marking fields as required and setting defaults.
 
 ## Why fig?
 
-Define your config, validations and defaults all within a single struct. Fig does the rest!
-
-Additionally, fig:
-
-- Understands `time.Time` & `time.Duration`
-- Has only 3 external dependencies
-- Exposes a tiny API
-- Decodes `.yaml`, `.json` and `.toml` files
-- Is extensively tested
+- Define your config, validations and defaults all in a single struct
+- Full support for`time.Time` & `time.Duration`
+- Only 3 external dependencies
+- Tiny API
+- Decoders for `.yaml`, `.json` and `.toml` files
 
 ## Getting Started
 
 `$ go get -d github.com/kkyr/fig`
 
-Define your configuration file:
+Define your config file:
 
 ```yaml
 # config.yaml
@@ -48,7 +44,7 @@ logger:
     trace: true
 ```
 
-Define your struct and load it using fig:
+Define your struct along with any required and default fields:
 
 ```go
 package main
@@ -82,9 +78,9 @@ func main() {
 }
 ```
 
-Fig searches by default for a file named `config.yaml` in the directory it is run from.
+If a field is not loaded from the config file and is marked as *required* then an error is returned. If a *default* value is defined instead then that value is used to populate the field.
 
-Change the behaviour based on your needs by passing additional parameters to `Load()`:
+Fig searches for a file named `config.yaml` in the directory it is run from. Change the lookup behaviour by passing additional parameters to `Load()`:
 
 ```go
 fig.Load(&cfg,
