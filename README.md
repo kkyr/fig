@@ -37,7 +37,7 @@ build: "2020-01-09T12:30:00Z"
 server:
     ports:
       - 8080
-cleanup: 1h
+    cleanup: 1h
 
 logger:
     level: "warn"
