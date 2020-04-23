@@ -27,7 +27,7 @@ const (
 	DefaultTimeLayout = time.RFC3339
 )
 
-// ErrFileNotFound is returned as a wrapped error by Load when the config file is
+// ErrFileNotFound is returned as a wrapped error by `Load` when the config file is
 // not found in the given search dirs.
 var ErrFileNotFound = fmt.Errorf("file not found")
 
