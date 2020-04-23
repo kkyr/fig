@@ -3,6 +3,7 @@ linters:
   disable:
     - wsl
     - gomnd
+    - testpackage
 
 issues:
   exclude-rules:
