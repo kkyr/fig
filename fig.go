@@ -27,6 +27,10 @@ const (
 	DefaultTimeLayout = time.RFC3339
 )
 
+// ErrFileNotFound is returned as a wrapped error by Load when the config file is
+// not found in the given search dirs.
+var ErrFileNotFound = fmt.Errorf("file not found")
+
 // Load reads a configuration file and loads it into the given struct. The
 // parameter `cfg` must be a pointer to a struct.
 //
@@ -140,7 +144,7 @@ func (f *fig) findFile() (string, error) {
 	}
 
 	if filePath == "" {
-		return "", fmt.Errorf("could not find file %s", f.filename)
+		return "", fmt.Errorf("%s: %w", f.filename, ErrFileNotFound)
 	}
 
 	return filePath, nil
@@ -430,7 +434,7 @@ func (f *fig) setFieldValue(fv reflect.Value, val string) error {
 
 // setSliceValue populates a slice with val using reflection.
 // sv must be a settable slice value.
-// val must be a slice in string format (i.e. "[1,2,3]")
+// val must be a slice in string format (i.e. "[1,2,3]").
 func (f *fig) setSliceValue(sv reflect.Value, val string) error {
 	ss := f.stringSlice(val)
 	slice := reflect.MakeSlice(sv.Type(), len(ss), cap(ss))
@@ -448,8 +452,8 @@ func (f *fig) setSliceValue(sv reflect.Value, val string) error {
 
 // stringSlice converts a slice in string format to an actual slice.
 // fields should be separated by a comma.
-// "[1,2,3]"     --->   []string{"1", "2", "3"}
-// " foo , bar"  --->   []string{" foo ", " bar"}
+//   "[1,2,3]"     --->   []string{"1", "2", "3"}
+//   " foo , bar"  --->   []string{" foo ", " bar"}
 func (f *fig) stringSlice(s string) []string {
 	s = strings.TrimSuffix(strings.TrimPrefix(s, string(f.sliceStart)), string(f.sliceEnd))
 	return strings.Split(s, ",")

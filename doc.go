@@ -186,5 +186,15 @@ Slice defaults must be enclosed in square brackets and successive values separat
   type Config struct {
     Durations []time.Duration `fig:",default=[30m,1h,90m,2h]"
   }
+
+Errors
+
+A wrapped error `ErrFileNotFound` is returned when fig is not able to find a config file to load. This can be useful for instance to fallback to a different configuration loading mechanism.
+
+  var cfg Config
+  err := fig.Load(&cfg)
+  if errors.Is(err, fig.ErrFileNotFound) {
+    // load config from elsewhere
+  }
 */
 package fig

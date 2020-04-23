@@ -1,6 +1,7 @@
 package fig
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -398,7 +399,7 @@ func Test_fig_findFile(t *testing.T) {
 		}
 	})
 
-	t.Run("non-existing file returns error", func(t *testing.T) {
+	t.Run("non-existing file returns ErrFileNotFound", func(t *testing.T) {
 		fig := newDefaultFig()
 		fig.filename = "nope.nope"
 		fig.dirs = []string{".", "testdata", filepath.Join("testdata", "valid")}
@@ -406,6 +407,9 @@ func Test_fig_findFile(t *testing.T) {
 		file, err := fig.findFile()
 		if err == nil {
 			t.Fatalf("expected err, got file %s", file)
+		}
+		if !errors.Is(err, ErrFileNotFound) {
+			t.Errorf("expected err %v, got %v", ErrFileNotFound, err)
 		}
 	})
 }
