@@ -174,18 +174,18 @@ Fig attempts to parse the value based on the field's type. If parsing fails then
 
 A default value can be set for the following types:
 
-  all basic types*
+  all basic types except bool and complex
   time.Time
   time.Duration
   slices (of above types)
-
-  *complex not supported
 
 Slice defaults must be enclosed in square brackets and successive values separated by a comma:
 
   type Config struct {
     Durations []time.Duration `fig:",default=[30m,1h,90m,2h]"
   }
+
+Note: the default setter knows if it should fill a field or not by comparing if the current value of the field is equal to the corresponding zero value for that field's type. This happens after the configuration is loaded and has the implication that the zero value set explicitly by the user will get overwritten by any default value registered for that field. It's for this reason that defaults on booleans are not permitted, as a boolean field with a default value of `true` would always be true (since if it were set to false it'd be overwritten).
 
 Errors
 

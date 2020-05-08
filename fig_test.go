@@ -214,7 +214,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 					Ports  []int  `fig:"ports,default=[80,443]"`
 					Logger struct {
 						LogLevel   string `fig:"log_level,default=info"`
-						Production bool   `fig:"production,default=true"`
+						Production bool   `fig:"production"`
 						Metadata   struct {
 							Keys []string `fig:"keys,default=[ts]"`
 						}
@@ -228,7 +228,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 				want.Host = "0.0.0.0"
 				want.Ports = []int{80, 443}
 				want.Logger.LogLevel = "debug"
-				want.Logger.Production = true
+				want.Logger.Production = false
 				want.Logger.Metadata.Keys = []string{"ts"}
 				want.Application.BuildDate = time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC)
 
@@ -252,9 +252,8 @@ func Test_fig_Load_Defaults(t *testing.T) {
 					Host   string `fig:"host,default=127.0.0.1"`
 					Ports  []int  `fig:"ports,default=[80,not-a-port]"`
 					Logger struct {
-						LogLevel   string `fig:"log_level,default=info"`
-						Production bool   `fig:"production,default=not-a-bool"`
-						Metadata   struct {
+						LogLevel string `fig:"log_level,default=info"`
+						Metadata struct {
 							Keys []string `fig:"keys,required"`
 						}
 					}
@@ -271,7 +270,6 @@ func Test_fig_Load_Defaults(t *testing.T) {
 
 				want := []string{
 					"Ports",
-					"Logger.Production",
 					"Logger.Metadata.Keys",
 					"Application.BuildDate",
 				}
@@ -299,9 +297,8 @@ func Test_fig_Load_RequiredAndDefaults(t *testing.T) {
 				Host   string `fig:"host,default=127.0.0.1"`
 				Ports  []int  `fig:"ports,required"`
 				Logger struct {
-					LogLevel   string `fig:"log_level,required"`
-					Production bool   `fig:"production,default=5"`
-					Metadata   struct {
+					LogLevel string `fig:"log_level,required"`
+					Metadata struct {
 						Keys []string `fig:"keys,required"`
 					}
 				}
@@ -318,7 +315,6 @@ func Test_fig_Load_RequiredAndDefaults(t *testing.T) {
 
 			want := []string{
 				"Ports",
-				"Logger.Production",
 				"Logger.Metadata.Keys",
 			}
 
@@ -344,9 +340,8 @@ func Test_fig_Load_Options(t *testing.T) {
 				Host   string `custom:"host,default=127.0.0.1"`
 				Ports  []int  `custom:"ports,default=[80,443]"`
 				Logger struct {
-					LogLevel   string `custom:"log_level,default=info"`
-					Production bool   `custom:"production,default=true"`
-					Metadata   struct {
+					LogLevel string `custom:"log_level,default=info"`
+					Metadata struct {
 						Keys []string `custom:"keys,default=[ts]"`
 					}
 				}
@@ -359,7 +354,6 @@ func Test_fig_Load_Options(t *testing.T) {
 			want.Host = "0.0.0.0"
 			want.Ports = []int{80, 443}
 			want.Logger.LogLevel = "debug"
-			want.Logger.Production = true
 			want.Logger.Metadata.Keys = []string{"ts"}
 			want.Application.BuildDate = time.Date(2012, 12, 25, 0, 0, 0, 0, time.UTC)
 
@@ -938,15 +932,15 @@ func Test_fig_validateFieldWithTag_default(t *testing.T) {
 	f := newDefaultFig()
 
 	t.Run("sets default with leading field name", func(t *testing.T) {
-		b := false
+		var s string
 
-		err := f.validateFieldWithTag(reflect.ValueOf(&b).Elem(), "b,default=true")
+		err := f.validateFieldWithTag(reflect.ValueOf(&s).Elem(), "b,default=hey")
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		if b != true {
-			t.Fatalf("want %t, got %t", true, b)
+		if s != "hey" {
+			t.Fatalf("want %s, got %s", "hey", s)
 		}
 	})
 
@@ -1154,16 +1148,16 @@ func Test_fig_setFieldValue(t *testing.T) {
 	})
 
 	t.Run("slice", func(t *testing.T) {
-		var slice []bool
+		var slice []int
 		fv := reflect.ValueOf(&slice).Elem()
 
-		err := fig.setFieldValue(fv, "true")
+		err := fig.setFieldValue(fv, "5")
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		if !reflect.DeepEqual([]bool{true}, slice) {
-			t.Fatalf("want %+v, got %+v", []bool{true}, slice)
+		if !reflect.DeepEqual([]int{5}, slice) {
+			t.Fatalf("want %+v, got %+v", []int{5}, slice)
 		}
 	})
 
@@ -1172,12 +1166,8 @@ func Test_fig_setFieldValue(t *testing.T) {
 		fv := reflect.ValueOf(&b).Elem()
 
 		err := fig.setFieldValue(fv, "true")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if b == false {
-			t.Fatalf("b != true")
+		if err == nil {
+			t.Fatalf("expected err")
 		}
 	})
 
@@ -1323,12 +1313,6 @@ func Test_fig_setSliceValue(t *testing.T) {
 			InSlice:   &[]string{},
 			WantSlice: &[]string{"a", "b", "c", "d"},
 			Val:       string(f.sliceStart) + "a,b,c,d" + string(f.sliceEnd),
-		},
-		{
-			Name:      "bools",
-			InSlice:   &[]bool{},
-			WantSlice: &[]bool{true, true, false, false, false, true},
-			Val:       string(f.sliceStart) + "1,1,false,0,false,true" + string(f.sliceEnd),
 		},
 		{
 			Name:      "durations",

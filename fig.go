@@ -381,12 +381,6 @@ func (f *fig) setFieldValue(fv reflect.Value, val string) error {
 		if err := f.setSliceValue(fv, val); err != nil {
 			return err
 		}
-	case reflect.Bool:
-		b, err := strconv.ParseBool(val)
-		if err != nil {
-			return err
-		}
-		fv.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if _, ok := fv.Interface().(time.Duration); ok {
 			d, err := time.ParseDuration(val)
