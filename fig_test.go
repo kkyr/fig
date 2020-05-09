@@ -2,7 +2,6 @@ package fig
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -132,49 +131,6 @@ func validPodConfig() Pod {
 	}
 
 	return pod
-}
-
-// func Test_fig_getFields(t *testing.T) {
-// 	type A struct {
-// 		B []struct {
-// 			C int `fig:"c"`
-// 		} `fig:"b"`
-// 	}
-// 	cfg := A{B: []struct {
-// 		C int `fig:"c"`
-// 	}{{}, {}}}
-//
-// 	fig := defaultFig()
-// 	fields := fig.flattenStruct(&cfg)
-//
-// 	fmt.Println("num fields", len(*fields))
-//
-// 	for _, f := range *fields {
-// 		if f.parent != nil {
-// 			fmt.Println(f.path())
-// 		}
-// 	}
-// }
-
-func Test_fieldErrors(t *testing.T) {
-	fe := make(fieldErrors)
-
-	fe["B"] = fmt.Errorf("berr")
-	fe["A"] = fmt.Errorf("aerr")
-
-	got := fe.Error()
-
-	want := "A: aerr, B: berr"
-	if want != got {
-		t.Fatalf("want %q, got %q", want, got)
-	}
-
-	fe = make(fieldErrors)
-	got = fe.Error()
-
-	if got != "" {
-		t.Fatalf("empty errors returned non-empty string: %s", got)
-	}
 }
 
 func Test_fig_Load(t *testing.T) {
@@ -355,7 +311,7 @@ func Test_fig_Load_RequiredAndDefaults(t *testing.T) {
 	}
 }
 
-func Test_fig_Load_Options(t *testing.T) {
+func Test_fig_Load_WithOptions(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {
 			type Server struct {
@@ -398,13 +354,13 @@ func Test_fig_Load_Options(t *testing.T) {
 	}
 }
 
-func Test_fig_findFile(t *testing.T) {
+func Test_fig_findCfgFile(t *testing.T) {
 	t.Run("finds existing file", func(t *testing.T) {
 		fig := defaultFig()
 		fig.filename = "pod.yaml"
 		fig.dirs = []string{".", "testdata", filepath.Join("testdata", "valid")}
 
-		file, err := fig.findFile()
+		file, err := fig.findCfgFile()
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -420,7 +376,7 @@ func Test_fig_findFile(t *testing.T) {
 		fig.filename = "nope.nope"
 		fig.dirs = []string{".", "testdata", filepath.Join("testdata", "valid")}
 
-		file, err := fig.findFile()
+		file, err := fig.findCfgFile()
 		if err == nil {
 			t.Fatalf("expected err, got file %s", file)
 		}
@@ -472,6 +428,233 @@ func Test_fig_decodeMap(t *testing.T) {
 	if cfg.Server.Secure == false {
 		t.Error("cfg.Server.Secure == false")
 	}
+}
+
+func Test_fig_setValue(t *testing.T) {
+	fig := defaultFig()
+
+	t.Run("nil ptr", func(t *testing.T) {
+		var s *string
+		fv := reflect.ValueOf(&s)
+
+		err := fig.setValue(fv, "bat")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if *s != "bat" {
+			t.Fatalf("want %s, got %s", "bat", *s)
+		}
+	})
+
+	t.Run("slice", func(t *testing.T) {
+		var slice []int
+		fv := reflect.ValueOf(&slice).Elem()
+
+		err := fig.setValue(fv, "5")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if !reflect.DeepEqual([]int{5}, slice) {
+			t.Fatalf("want %+v, got %+v", []int{5}, slice)
+		}
+	})
+
+	t.Run("bool returns error", func(t *testing.T) {
+		var b bool
+		fv := reflect.ValueOf(&b).Elem()
+
+		err := fig.setValue(fv, "true")
+		if err == nil {
+			t.Fatalf("expected err")
+		}
+	})
+
+	t.Run("int", func(t *testing.T) {
+		var i int
+		fv := reflect.ValueOf(&i).Elem()
+
+		err := fig.setValue(fv, "-8")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if i != -8 {
+			t.Fatalf("want %d, got %d", -8, i)
+		}
+	})
+
+	t.Run("duration", func(t *testing.T) {
+		var d time.Duration
+		fv := reflect.ValueOf(&d).Elem()
+
+		err := fig.setValue(fv, "5h")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if d.Hours() != 5 {
+			t.Fatalf("want %v, got %v", 5*time.Hour, d)
+		}
+	})
+
+	t.Run("uint", func(t *testing.T) {
+		var i uint
+		fv := reflect.ValueOf(&i).Elem()
+
+		err := fig.setValue(fv, "42")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if i != 42 {
+			t.Fatalf("want %d, got %d", 42, i)
+		}
+	})
+
+	t.Run("float", func(t *testing.T) {
+		var f float32
+		fv := reflect.ValueOf(&f).Elem()
+
+		err := fig.setValue(fv, "0.015625")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if f != 0.015625 {
+			t.Fatalf("want %f, got %f", 0.015625, f)
+		}
+	})
+
+	t.Run("string", func(t *testing.T) {
+		var s string
+		fv := reflect.ValueOf(&s).Elem()
+
+		err := fig.setValue(fv, "bat")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if s != "bat" {
+			t.Fatalf("want %s, got %s", "bat", s)
+		}
+	})
+
+	t.Run("time", func(t *testing.T) {
+		var tme time.Time
+		fv := reflect.ValueOf(&tme).Elem()
+
+		err := fig.setValue(fv, "2020-01-01T00:00:00Z")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		want, err := time.Parse(fig.timeLayout, "2020-01-01T00:00:00Z")
+		if err != nil {
+			t.Fatalf("error parsing time: %v", err)
+		}
+
+		if !tme.Equal(want) {
+			t.Fatalf("want %v, got %v", want, tme)
+		}
+	})
+
+	t.Run("interface returns error", func(t *testing.T) {
+		var i interface{}
+		fv := reflect.ValueOf(i)
+
+		err := fig.setValue(fv, "empty")
+		if err == nil {
+			t.Fatalf("expected err")
+		}
+	})
+
+	t.Run("struct returns error", func(t *testing.T) {
+		s := struct{ Name string }{}
+		fv := reflect.ValueOf(&s).Elem()
+
+		err := fig.setValue(fv, "foo")
+		if err == nil {
+			t.Fatalf("expected err")
+		}
+	})
+}
+
+func Test_fig_setSlice(t *testing.T) {
+	f := defaultFig()
+
+	for _, tc := range []struct {
+		Name      string
+		InSlice   interface{}
+		WantSlice interface{}
+		Val       string
+	}{
+		{
+			Name:      "ints",
+			InSlice:   &[]int{},
+			WantSlice: &[]int{5, 10, 15},
+			Val:       "[5,10,15]",
+		},
+		{
+			Name:      "uints",
+			InSlice:   &[]uint{},
+			WantSlice: &[]uint{5, 10, 15, 20, 25},
+			Val:       "[5,10,15,20,25]",
+		},
+		{
+			Name:      "floats",
+			InSlice:   &[]float32{},
+			WantSlice: &[]float32{1.5, 1.125, -0.25},
+			Val:       "[1.5,1.125,-0.25]",
+		},
+		{
+			Name:      "strings",
+			InSlice:   &[]string{},
+			WantSlice: &[]string{"a", "b", "c", "d"},
+			Val:       "[a,b,c,d]",
+		},
+		{
+			Name:      "durations",
+			InSlice:   &[]time.Duration{},
+			WantSlice: &[]time.Duration{30 * time.Minute, 2 * time.Hour},
+			Val:       "[30m,2h]",
+		},
+		{
+			Name:    "times",
+			InSlice: &[]time.Time{},
+			WantSlice: &[]time.Time{
+				time.Date(2019, 12, 25, 10, 30, 30, 0, time.UTC),
+				time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+			Val: "[2019-12-25T10:30:30Z,2020-01-01T00:00:00Z]",
+		},
+	} {
+		t.Run(tc.Val, func(t *testing.T) {
+			in := reflect.ValueOf(tc.InSlice).Elem()
+
+			err := f.setSlice(in, tc.Val)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			want := reflect.ValueOf(tc.WantSlice).Elem()
+
+			if !reflect.DeepEqual(want.Interface(), in.Interface()) {
+				t.Fatalf("want %+v, got %+v", want, in)
+			}
+		})
+	}
+
+	t.Run("negative int into uint returns error", func(t *testing.T) {
+		in := &[]uint{}
+		val := "[-5]"
+
+		err := f.setSlice(reflect.ValueOf(in).Elem(), val)
+		if err == nil {
+			t.Fatalf("expected err")
+		}
+	})
 }
 
 // func Test_fig_validate(t *testing.T) {
@@ -1022,359 +1205,3 @@ func Test_fig_decodeMap(t *testing.T) {
 // 		}
 // 	})
 // }
-
-func Test_fig_isZero(t *testing.T) {
-	t.Run("nil slice is zero", func(t *testing.T) {
-		var s []string
-		if isZero(reflect.ValueOf(s)) == false {
-			t.Fatalf("isZero == false")
-		}
-	})
-
-	t.Run("empty slice is zero", func(t *testing.T) {
-		s := []string{}
-		if isZero(reflect.ValueOf(s)) == false {
-			t.Fatalf("isZero == false")
-		}
-	})
-
-	t.Run("nil pointer is zero", func(t *testing.T) {
-		var s *string
-		if isZero(reflect.ValueOf(s)) == false {
-			t.Fatalf("isZero == false")
-		}
-	})
-
-	t.Run("non-nil pointer is not zero", func(t *testing.T) {
-		var a *string
-		b := "b"
-		a = &b
-
-		if isZero(reflect.ValueOf(a)) == true {
-			t.Fatalf("isZero == true")
-		}
-	})
-
-	t.Run("struct is not zero", func(t *testing.T) {
-		a := struct {
-			B string
-		}{}
-
-		if isZero(reflect.ValueOf(a)) == true {
-			t.Fatalf("isZero == true")
-		}
-	})
-
-	t.Run("zero time is zero", func(t *testing.T) {
-		td := time.Time{}
-
-		if isZero(reflect.ValueOf(td)) == false {
-			t.Fatalf("isZero == false")
-		}
-	})
-
-	t.Run("non-zero time is not zero", func(t *testing.T) {
-		td := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-
-		if isZero(reflect.ValueOf(td)) == true {
-			t.Fatalf("isZero == true")
-		}
-	})
-
-	t.Run("reflect invalid is zero", func(t *testing.T) {
-		var x interface{}
-
-		if isZero(reflect.ValueOf(&x).Elem().Elem()) == false {
-			t.Fatalf("isZero == false")
-		}
-	})
-
-	t.Run("0 int is zero", func(t *testing.T) {
-		x := 0
-
-		if isZero(reflect.ValueOf(x)) == false {
-			t.Fatalf("isZero == false")
-		}
-	})
-
-	t.Run("5 int is not zero", func(t *testing.T) {
-		x := 5
-
-		if isZero(reflect.ValueOf(x)) == true {
-			t.Fatalf("isZero == true")
-		}
-	})
-}
-
-// func Test_fig_splitTagCommas(t *testing.T) {
-// 	for _, tc := range []struct {
-// 		S    string
-// 		Want []string
-// 	}{
-// 		{
-// 			S:    ",[hello, world]",
-// 			Want: []string{"", "[hello, world]"},
-// 		},
-// 		{
-// 			S:    ",required",
-// 			Want: []string{"", "required"},
-// 		},
-// 		{
-// 			S:    "single",
-// 			Want: []string{"single"},
-// 		},
-// 		{
-// 			S:    "log,required,[1,2,3]",
-// 			Want: []string{"log", "required", "[1,2,3]"},
-// 		},
-// 		{
-// 			S:    "log,[55.5,8.2],required",
-// 			Want: []string{"log", "[55.5,8.2]", "required"},
-// 		},
-// 		{
-// 			S:    "語,[語,foo本bar],required",
-// 			Want: []string{"語", "[語,foo本bar]", "required"},
-// 		},
-// 	} {
-// 		t.Run(tc.S, func(t *testing.T) {
-// 			got := defaultFig().splitTagCommas(tc.S)
-//
-// 			if len(tc.Want) != len(got) {
-// 				t.Fatalf("want len %d, got %d", len(tc.Want), len(got))
-// 			}
-//
-// 			for i, val := range tc.Want {
-// 				if got[i] != val {
-// 					t.Errorf("want slice[%d] == %s, got %s", i, val, got[i])
-// 				}
-// 			}
-// 		})
-// 	}
-// }
-
-func Test_fig_setFieldValue(t *testing.T) {
-	fig := defaultFig()
-
-	t.Run("nil ptr", func(t *testing.T) {
-		var s *string
-		fv := reflect.ValueOf(&s)
-
-		err := fig.setFieldValue(fv, "bat")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if *s != "bat" {
-			t.Fatalf("want %s, got %s", "bat", *s)
-		}
-	})
-
-	t.Run("slice", func(t *testing.T) {
-		var slice []int
-		fv := reflect.ValueOf(&slice).Elem()
-
-		err := fig.setFieldValue(fv, "5")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if !reflect.DeepEqual([]int{5}, slice) {
-			t.Fatalf("want %+v, got %+v", []int{5}, slice)
-		}
-	})
-
-	t.Run("bool", func(t *testing.T) {
-		var b bool
-		fv := reflect.ValueOf(&b).Elem()
-
-		err := fig.setFieldValue(fv, "true")
-		if err == nil {
-			t.Fatalf("expected err")
-		}
-	})
-
-	t.Run("int", func(t *testing.T) {
-		var i int
-		fv := reflect.ValueOf(&i).Elem()
-
-		err := fig.setFieldValue(fv, "-8")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if i != -8 {
-			t.Fatalf("want %d, got %d", -8, i)
-		}
-	})
-
-	t.Run("duration", func(t *testing.T) {
-		var d time.Duration
-		fv := reflect.ValueOf(&d).Elem()
-
-		err := fig.setFieldValue(fv, "5h")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if d.Hours() != 5 {
-			t.Fatalf("want %v, got %v", 5*time.Hour, d)
-		}
-	})
-
-	t.Run("uint", func(t *testing.T) {
-		var i uint
-		fv := reflect.ValueOf(&i).Elem()
-
-		err := fig.setFieldValue(fv, "42")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if i != 42 {
-			t.Fatalf("want %d, got %d", 42, i)
-		}
-	})
-
-	t.Run("float", func(t *testing.T) {
-		var f float32
-		fv := reflect.ValueOf(&f).Elem()
-
-		err := fig.setFieldValue(fv, "0.015625")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if f != 0.015625 {
-			t.Fatalf("want %f, got %f", 0.015625, f)
-		}
-	})
-
-	t.Run("string", func(t *testing.T) {
-		var s string
-		fv := reflect.ValueOf(&s).Elem()
-
-		err := fig.setFieldValue(fv, "bat")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		if s != "bat" {
-			t.Fatalf("want %s, got %s", "bat", s)
-		}
-	})
-
-	t.Run("time", func(t *testing.T) {
-		var tme time.Time
-		fv := reflect.ValueOf(&tme).Elem()
-
-		err := fig.setFieldValue(fv, "2020-01-01T00:00:00Z")
-		if err != nil {
-			t.Fatalf("unexpected err: %v", err)
-		}
-
-		want, err := time.Parse(fig.timeLayout, "2020-01-01T00:00:00Z")
-		if err != nil {
-			t.Fatalf("error parsing time: %v", err)
-		}
-
-		if !tme.Equal(want) {
-			t.Fatalf("want %v, got %v", want, tme)
-		}
-	})
-
-	t.Run("interface returns error", func(t *testing.T) {
-		var i interface{}
-		fv := reflect.ValueOf(i)
-
-		err := fig.setFieldValue(fv, "empty")
-		if err == nil {
-			t.Fatalf("expected err")
-		}
-	})
-
-	t.Run("struct returns error", func(t *testing.T) {
-		s := struct{ Name string }{}
-		fv := reflect.ValueOf(&s).Elem()
-
-		err := fig.setFieldValue(fv, "foo")
-		if err == nil {
-			t.Fatalf("expected err")
-		}
-	})
-}
-
-func Test_fig_setSliceValue(t *testing.T) {
-	f := defaultFig()
-
-	for _, tc := range []struct {
-		Name      string
-		InSlice   interface{}
-		WantSlice interface{}
-		Val       string
-	}{
-		{
-			Name:      "ints",
-			InSlice:   &[]int{},
-			WantSlice: &[]int{5, 10, 15},
-			Val:       "[5,10,15]",
-		},
-		{
-			Name:      "uints",
-			InSlice:   &[]uint{},
-			WantSlice: &[]uint{5, 10, 15, 20, 25},
-			Val:       "[5,10,15,20,25]",
-		},
-		{
-			Name:      "floats",
-			InSlice:   &[]float32{},
-			WantSlice: &[]float32{1.5, 1.125, -0.25},
-			Val:       "[1.5,1.125,-0.25]",
-		},
-		{
-			Name:      "strings",
-			InSlice:   &[]string{},
-			WantSlice: &[]string{"a", "b", "c", "d"},
-			Val:       "[a,b,c,d]",
-		},
-		{
-			Name:      "durations",
-			InSlice:   &[]time.Duration{},
-			WantSlice: &[]time.Duration{30 * time.Minute, 2 * time.Hour},
-			Val:       "[30m,2h]",
-		},
-		{
-			Name:    "times",
-			InSlice: &[]time.Time{},
-			WantSlice: &[]time.Time{
-				time.Date(2019, 12, 25, 10, 30, 30, 0, time.UTC),
-				time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
-			Val: "[2019-12-25T10:30:30Z,2020-01-01T00:00:00Z]",
-		},
-	} {
-		t.Run(tc.Val, func(t *testing.T) {
-			in := reflect.ValueOf(tc.InSlice).Elem()
-
-			err := f.setSliceValue(in, tc.Val)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			want := reflect.ValueOf(tc.WantSlice).Elem()
-
-			if !reflect.DeepEqual(want.Interface(), in.Interface()) {
-				t.Fatalf("want %+v, got %+v", want, in)
-			}
-		})
-	}
-
-	t.Run("negative int into uint returns error", func(t *testing.T) {
-		in := &[]uint{}
-		val := "[-5]"
-
-		err := f.setSliceValue(reflect.ValueOf(in).Elem(), val)
-		if err == nil {
-			t.Fatalf("expected err")
-		}
-	})
-}

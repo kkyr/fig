@@ -74,50 +74,41 @@ type fig struct {
 	timeLayout string
 }
 
-func (g *fig) Load(cfg interface{}) error {
+func (f *fig) Load(cfg interface{}) error {
 	if !isStructPtr(cfg) {
 		return fmt.Errorf("cfg must be a pointer to a struct")
 	}
 
-	file, err := g.findFile()
+	file, err := f.findCfgFile()
 	if err != nil {
 		return err
 	}
 
-	vals, err := g.decodeFile(file)
+	vals, err := f.decodeFile(file)
 	if err != nil {
 		return err
 	}
 
-	if err := g.decodeMap(vals, cfg); err != nil {
+	if err := f.decodeMap(vals, cfg); err != nil {
 		return err
 	}
 
-	fields := g.flattenStruct(cfg)
-	return g.validateFields(fields)
+	return f.processCfg(cfg)
 }
 
-func (g *fig) findFile() (string, error) {
-	var filePath string
-
-	for _, dir := range g.dirs {
-		path := filepath.Join(dir, g.filename)
+func (f *fig) findCfgFile() (path string, err error) {
+	for _, dir := range f.dirs {
+		path = filepath.Join(dir, f.filename)
 		if fileExists(path) {
-			filePath = path
-			break
+			return
 		}
 	}
-
-	if filePath == "" {
-		return "", fmt.Errorf("%s: %w", g.filename, ErrFileNotFound)
-	}
-
-	return filePath, nil
+	return "", fmt.Errorf("%s: %w", f.filename, ErrFileNotFound)
 }
 
 // decodeFile reads the file and unmarshalls it using a decoder based on the file extension.
-func (g *fig) decodeFile(filename string) (map[string]interface{}, error) {
-	fd, err := os.Open(filename)
+func (f *fig) decodeFile(file string) (map[string]interface{}, error) {
+	fd, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +116,7 @@ func (g *fig) decodeFile(filename string) (map[string]interface{}, error) {
 
 	vals := make(map[string]interface{})
 
-	switch filepath.Ext(filename) {
+	switch filepath.Ext(file) {
 	case ".yaml", ".yml":
 		if err := yaml.NewDecoder(fd).Decode(&vals); err != nil {
 			return nil, err
@@ -144,21 +135,21 @@ func (g *fig) decodeFile(filename string) (map[string]interface{}, error) {
 			vals[field] = val
 		}
 	default:
-		return nil, fmt.Errorf("unsupported file extension %s", filepath.Ext(g.filename))
+		return nil, fmt.Errorf("unsupported file extension %s", filepath.Ext(f.filename))
 	}
 
 	return vals, nil
 }
 
-// decodeMap decodes a map of values into a result struct using the mapstructure library.
-func (g *fig) decodeMap(m map[string]interface{}, result interface{}) error {
+// decodeMap decodes a map of values into result using the mapstructure library.
+func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		WeaklyTypedInput: true,
 		Result:           result,
-		TagName:          g.tag,
+		TagName:          f.tag,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.StringToTimeHookFunc(g.timeLayout),
+			mapstructure.StringToTimeHookFunc(f.timeLayout),
 		),
 	})
 	if err != nil {
@@ -167,14 +158,19 @@ func (g *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 	return dec.Decode(m)
 }
 
-func (g *fig) validateFields(fs []*field) error {
+// processCfg processes a cfg struct after it has been loaded from
+// the config file, by validating required fields and setting defaults
+// where applicable.
+func (f *fig) processCfg(cfg interface{}) error {
+	fields := flattenCfg(cfg)
 	errs := make(fieldErrors)
 
-	for _, f := range fs {
-		if err := g.validateFieldTag(f); err != nil {
-			errs[f.path()] = err
+	for _, field := range fields {
+		if err := f.processField(field); err != nil {
+			errs[field.path()] = err
 		}
 	}
+
 	if len(errs) > 0 {
 		return errs
 	}
@@ -182,17 +178,19 @@ func (g *fig) validateFields(fs []*field) error {
 	return nil
 }
 
-func (g *fig) validateFieldTag(f *field) error {
-	if f.tag.err != nil {
-		return f.tag.err
+// processField processes a single field and is called by processCfg
+// for each field in cfg.
+func (f *fig) processField(field *field) error {
+	if err := field.parseTag(f.tag); err != nil {
+		return err
 	}
 
-	if f.tag.required && isZero(f.v) {
-		return fmt.Errorf("required")
+	if field.tag.required && isZero(field.v) {
+		return fmt.Errorf("required field not set")
 	}
 
-	if len(f.tag.defaultVal) > 0 && isZero(f.v) {
-		if err := g.setFieldValue(f.v, f.tag.defaultVal); err != nil {
+	if len(field.tag.defaultVal) > 0 && isZero(field.v) {
+		if err := f.setValue(field.v, field.tag.defaultVal); err != nil {
 			return fmt.Errorf("unable to set default: %v", err)
 		}
 	}
@@ -200,17 +198,18 @@ func (g *fig) validateFieldTag(f *field) error {
 	return nil
 }
 
-// setFieldValue populates a field with a value using reflection.
-// it attempts to convert val to the correct type based on the field's kind.
-func (g *fig) setFieldValue(fv reflect.Value, val string) error {
+// setValue sets the value pointed to by fb to val. it attempts to
+// convert val to the correct type based on the field's kind.
+// fv must be settable else this panics.
+func (f *fig) setValue(fv reflect.Value, val string) error {
 	switch fv.Kind() {
 	case reflect.Ptr:
 		if fv.IsNil() {
 			fv.Set(reflect.New(fv.Type().Elem()))
 		}
-		return g.setFieldValue(fv.Elem(), val)
+		return f.setValue(fv.Elem(), val)
 	case reflect.Slice:
-		if err := g.setSliceValue(fv, val); err != nil {
+		if err := f.setSlice(fv, val); err != nil {
 			return err
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -243,7 +242,7 @@ func (g *fig) setFieldValue(fv reflect.Value, val string) error {
 		fv.SetString(val)
 	case reflect.Struct: // struct is only allowed a default in the special case where it's a time.Time
 		if _, ok := fv.Interface().(time.Time); ok {
-			t, err := time.Parse(g.timeLayout, val)
+			t, err := time.Parse(f.timeLayout, val)
 			if err != nil {
 				return err
 			}
@@ -258,15 +257,15 @@ func (g *fig) setFieldValue(fv reflect.Value, val string) error {
 	return nil
 }
 
-// setSliceValue populates a slice with val using reflection.
-// sv must be a settable slice value.
-// val must be a slice in string format (i.e. "[1,2,3]").
-func (g *fig) setSliceValue(sv reflect.Value, val string) error {
+// setSlice sets the slice pointed to by sv to val. val should be
+// a Go slice formatted as a string (e.g. "[1,2]").
+// sv must be settable else this panics.
+func (f *fig) setSlice(sv reflect.Value, val string) error {
 	ss := stringSlice(val)
 	slice := reflect.MakeSlice(sv.Type(), len(ss), cap(ss))
 
 	for i, s := range ss {
-		if err := g.setFieldValue(slice.Index(i), s); err != nil {
+		if err := f.setValue(slice.Index(i), s); err != nil {
 			return err
 		}
 	}
