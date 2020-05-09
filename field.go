@@ -90,8 +90,9 @@ func (f *field) name() string {
 	return f.st.Name
 }
 
-// path is a dot separated path consisting of the names of the
-// field's topmost parent all the way down to the field itself.
+// path is a dot separated path consisting of all the names of
+// the field's ancestors starting from the topmost parent all the
+// way down to the field itself.
 func (f *field) path() (path string) {
 	var visit func(f *field)
 	visit = func(f *field) {
@@ -109,8 +110,9 @@ func (f *field) path() (path string) {
 	return strings.Trim(path, ".")
 }
 
-// parseTag parses a field's struct tag under tagName and populates
-// f's tag field with the result.
+// parseTag gets a fields struct tag with name tagName, parses it
+// and populates f's tag field with the result. if an error is
+// encountered during parsing then it is immediately returned.
 func (f *field) parseTag(tagName string) error {
 	const (
 		requiredKey = "required"
@@ -119,16 +121,17 @@ func (f *field) parseTag(tagName string) error {
 
 	vals := splitTag(f.st.Tag.Get(tagName))
 	switch len(vals) {
-	case 0:
+	case 0: // no tag, all good
 		return nil
-	case 1:
+	case 1: // tag only contains a name
 		f.tag.name = strings.TrimSpace(vals[0])
-	case 2:
+	case 2: // tag contains name + required/default
 		f.tag.name = strings.TrimSpace(vals[0])
 		f.tag.required = vals[1] == requiredKey
 		if strings.HasPrefix(vals[1], defaultKey) {
 			f.tag.defaultVal = vals[1][len(defaultKey):]
 		}
+		// have we found either required or default?
 		if !f.tag.required && len(f.tag.defaultVal) == 0 {
 			return fmt.Errorf("invalid tag value: %s", vals[1])
 		}
@@ -139,19 +142,19 @@ func (f *field) parseTag(tagName string) error {
 	return nil
 }
 
-// structTag contains information gathered after parsing a field's
+// structTag contains information gathered from parsing a field's
 // struct tag.
 type structTag struct {
 	name       string // the name of the field as defined in the tag.
-	required   bool   // true if the tag contains a required key.
-	defaultVal string // default value if tag contains a default key.
+	required   bool   // true if the tag contained a required key.
+	defaultVal string // default value if tag contained a default key.
 }
 
 // splitTag behaves like strings.FieldsFunc with a comma separator
-// but it does not split comma separated values that are located inside
+// but it does not split comma separated values that are inside
 // square brackets.
 //
-// Examples:
+// see examples:
 //   "ports,default=[80,443] --> []string{"port", "default=[80,443]"}
 //   ",required"			 --> []string{"", "required"}
 func splitTag(tag string) []string {
