@@ -198,8 +198,9 @@ func (f *fig) processField(field *field) error {
 	return nil
 }
 
-// setValue sets the value pointed to by fb to val. it attempts to
-// convert val to the correct type based on the field's kind.
+// setValue sets fv to val. it attempts to convert val to the correct
+// type based on the field's kind. if conversion fails an error is
+// returned.
 // fv must be settable else this panics.
 func (f *fig) setValue(fv reflect.Value, val string) error {
 	switch fv.Kind() {
@@ -253,23 +254,21 @@ func (f *fig) setValue(fv reflect.Value, val string) error {
 	default:
 		return fmt.Errorf("unsupported type %s", fv.Kind())
 	}
-
 	return nil
 }
 
-// setSlice sets the slice pointed to by sv to val. val should be
-// a Go slice formatted as a string (e.g. "[1,2]").
+// setSlice val to sv. val should be a Go slice formatted as a string
+// (e.g. "[1,2]") and sv must be a slice value. if conversion of val
+// to a slice fails then an error is returned.
 // sv must be settable else this panics.
 func (f *fig) setSlice(sv reflect.Value, val string) error {
 	ss := stringSlice(val)
 	slice := reflect.MakeSlice(sv.Type(), len(ss), cap(ss))
-
 	for i, s := range ss {
 		if err := f.setValue(slice.Index(i), s); err != nil {
 			return err
 		}
 	}
-
 	sv.Set(slice)
 	return nil
 }
