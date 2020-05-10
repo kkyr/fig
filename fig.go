@@ -181,16 +181,17 @@ func (f *fig) processCfg(cfg interface{}) error {
 // processField processes a single field and is called by processCfg
 // for each field in cfg.
 func (f *fig) processField(field *field) error {
-	if err := field.parseTag(f.tag); err != nil {
+	tag, err := field.parseTag(f.tag)
+	if err != nil {
 		return err
 	}
 
-	if field.tag.required && isZero(field.v) {
+	if tag.required && isZero(field.v) {
 		return fmt.Errorf("required field not set")
 	}
 
-	if len(field.tag.defaultVal) > 0 && isZero(field.v) {
-		if err := f.setValue(field.v, field.tag.defaultVal); err != nil {
+	if len(tag.defaultVal) > 0 && isZero(field.v) {
+		if err := f.setValue(field.v, tag.defaultVal); err != nil {
 			return fmt.Errorf("unable to set default: %v", err)
 		}
 	}

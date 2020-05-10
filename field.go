@@ -113,33 +113,42 @@ func (f *field) path() (path string) {
 // parseTag gets a fields struct tag with name tagName, parses it
 // and populates f's tag field with the result. if an error is
 // encountered during parsing then it is immediately returned.
-func (f *field) parseTag(tagName string) error {
+func (f *field) parseTag(tagName string) (tag structTag, err error) {
+	tag, err = parseTagVal(f.st.Tag.Get(tagName))
+	f.tag = tag
+	return
+}
+
+// parseTagVal does the actual parsing of f.parseTag.
+func parseTagVal(tagVal string) (tag structTag, err error) {
 	const (
 		requiredKey = "required"
 		defaultKey  = "default="
 	)
 
-	vals := splitTag(f.st.Tag.Get(tagName))
+	vals := splitTag(tagVal)
 	switch len(vals) {
-	case 0: // no tag, all good
-		return nil
-	case 1: // tag only contains a name
-		f.tag.name = strings.TrimSpace(vals[0])
-	case 2: // tag contains name + required/default
-		f.tag.name = strings.TrimSpace(vals[0])
-		f.tag.required = vals[1] == requiredKey
+	case 0:
+		// no tag, do nothing
+	case 1:
+		// tag only contains a name
+		tag.name = strings.TrimSpace(vals[0])
+	case 2:
+		// tag contains name + required/default
+		tag.name = strings.TrimSpace(vals[0])
+		tag.required = vals[1] == requiredKey
 		if strings.HasPrefix(vals[1], defaultKey) {
-			f.tag.defaultVal = vals[1][len(defaultKey):]
+			tag.defaultVal = vals[1][len(defaultKey):]
 		}
 		// have we found either required or default?
-		if !f.tag.required && len(f.tag.defaultVal) == 0 {
-			return fmt.Errorf("invalid tag value: %s", vals[1])
+		if !tag.required && len(tag.defaultVal) == 0 {
+			err = fmt.Errorf("invalid tag value: %s", vals[1])
 		}
 	default:
-		return fmt.Errorf("too many values (%d) in tag", len(vals))
+		err = fmt.Errorf("too many values (%d) in tag", len(vals))
 	}
 
-	return nil
+	return
 }
 
 // structTag contains information gathered from parsing a field's
