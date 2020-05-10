@@ -91,6 +91,8 @@ fig.Load(&cfg,
 
 ```
 
+## Environment
+
 Need to additionally fill fields using the environment? It's as simple as:
 
 ```go
