@@ -10,14 +10,14 @@ import (
 )
 
 type Pod struct {
-	APIVersion string `fig:"apiVersion,default=v1"`
-	Kind       string `fig:"kind,required"`
+	APIVersion string `fig:"apiVersion" default:"v1"`
+	Kind       string `fig:"kind" validate:"required"`
 	Metadata   struct {
 		Name           string        `fig:"name"`
-		Environments   []string      `fig:"environments,default=[dev,staging,prod]"`
-		Master         bool          `fig:"master,required"`
-		MaxPercentUtil *float64      `fig:"maxPercentUtil,default=0.5"`
-		Retry          time.Duration `fig:"retry,default=10s"`
+		Environments   []string      `fig:"environments" default:"[dev,staging,prod]"`
+		Master         bool          `fig:"master" validate:"required"`
+		MaxPercentUtil *float64      `fig:"maxPercentUtil" default:"0.5"`
+		Retry          time.Duration `fig:"retry" default:"10s"`
 	} `fig:"metadata"`
 	Spec Spec `fig:"spec"`
 }
@@ -28,8 +28,8 @@ type Spec struct {
 }
 
 type Container struct {
-	Name      string   `fig:"name,required"`
-	Image     string   `fig:"image,required"`
+	Name      string   `fig:"name" validate:"required"`
+	Image     string   `fig:"image" validate:"required"`
 	Command   []string `fig:"command"`
 	Env       []Env    `fig:"env"`
 	Ports     []Port   `fig:"ports"`
@@ -38,8 +38,8 @@ type Container struct {
 			CPU string `fig:"cpu"`
 		} `fig:"limits"`
 		Requests *struct {
-			Memory string  `fig:"memory,default=64Mi"`
-			CPU    *string `fig:"cpu,default=250m"`
+			Memory string  `fig:"memory" default:"64Mi"`
+			CPU    *string `fig:"cpu" default:"250m"`
 		}
 	} `fig:"resources"`
 	VolumeMounts []VolumeMount `fig:"volumeMounts"`
@@ -51,27 +51,27 @@ type Env struct {
 }
 
 type Port struct {
-	ContainerPort int `fig:"containerPort,required"`
+	ContainerPort int `fig:"containerPort" validate:"required"`
 }
 
 type VolumeMount struct {
-	MountPath string `fig:"mountPath,required"`
-	Name      string `fig:"name,required"`
+	MountPath string `fig:"mountPath" validate:"required"`
+	Name      string `fig:"name" validate:"required"`
 }
 
 type Volume struct {
-	Name      string     `fig:"name,required"`
+	Name      string     `fig:"name" validate:"required"`
 	ConfigMap *ConfigMap `fig:"configMap"`
 }
 
 type ConfigMap struct {
-	Name  string `fig:"name,required"`
-	Items []Item `fig:"items,required"`
+	Name  string `fig:"name" validate:"required"`
+	Items []Item `fig:"items" validate:"required"`
 }
 
 type Item struct {
-	Key  string `fig:"key,required"`
-	Path string `fig:"path,required"`
+	Key  string `fig:"key" validate:"required"`
+	Path string `fig:"path" validate:"required"`
 }
 
 func validPodConfig() Pod {
@@ -203,17 +203,17 @@ func Test_fig_Load_Defaults(t *testing.T) {
 		for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 			t.Run(f, func(t *testing.T) {
 				type Server struct {
-					Host   string `fig:"host,default=127.0.0.1"`
-					Ports  []int  `fig:"ports,default=[80,443]"`
+					Host   string `fig:"host" default:"127.0.0.1"`
+					Ports  []int  `fig:"ports" default:"[80,443]"`
 					Logger struct {
-						LogLevel   string `fig:"log_level,default=info"`
+						LogLevel   string `fig:"log_level" default:"info"`
 						Production bool   `fig:"production"`
 						Metadata   struct {
-							Keys []string `fig:"keys,default=[ts]"`
+							Keys []string `fig:"keys" default:"[ts]"`
 						}
 					}
 					Application struct {
-						BuildDate time.Time `fig:"build_date,default=2020-01-01T12:00:00Z"`
+						BuildDate time.Time `fig:"build_date" default:"2020-01-01T12:00:00Z"`
 					}
 				}
 
@@ -242,16 +242,16 @@ func Test_fig_Load_Defaults(t *testing.T) {
 		for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 			t.Run(f, func(t *testing.T) {
 				type Server struct {
-					Host   string `fig:"host,default=127.0.0.1"`
-					Ports  []int  `fig:"ports,default=[80,not-a-port]"`
+					Host   string `fig:"host" default:"127.0.0.1"`
+					Ports  []int  `fig:"ports" default:"[80,not-a-port]"`
 					Logger struct {
-						LogLevel string `fig:"log_level,default=info"`
+						LogLevel string `fig:"log_level" default:"info"`
 						Metadata struct {
-							Keys []string `fig:"keys,required"`
+							Keys []string `fig:"keys" validate:"required"`
 						}
 					}
 					Application struct {
-						BuildDate time.Time `fig:"build_date,default=not-a-time"`
+						BuildDate time.Time `fig:"build_date" default:"not-a-time"`
 					}
 				}
 
@@ -287,16 +287,16 @@ func Test_fig_Load_RequiredAndDefaults(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {
 			type Server struct {
-				Host   string `fig:"host,default=127.0.0.1"`
-				Ports  []int  `fig:"ports,required"`
+				Host   string `fig:"host" default:"127.0.0.1"`
+				Ports  []int  `fig:"ports" validate:"required"`
 				Logger struct {
-					LogLevel string `fig:"log_level,required"`
+					LogLevel string `fig:"log_level" validate:"required"`
 					Metadata struct {
-						Keys []string `fig:"keys,required"`
+						Keys []string `fig:"keys" validate:"required"`
 					}
 				}
 				Application struct {
-					BuildDate time.Time `fig:"build_date,default=2020-01-01T12:00:00Z"`
+					BuildDate time.Time `fig:"build_date" default:"2020-01-01T12:00:00Z"`
 				}
 			}
 
@@ -330,16 +330,16 @@ func Test_fig_Load_WithOptions(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {
 			type Server struct {
-				Host   string `custom:"host,default=127.0.0.1"`
-				Ports  []int  `custom:"ports,default=[80,443]"`
+				Host   string `custom:"host" default:"127.0.0.1"`
+				Ports  []int  `custom:"ports" default:"[80,443]"`
 				Logger struct {
-					LogLevel string `custom:"log_level,default=info"`
+					LogLevel string `custom:"log_level" default:"info"`
 					Metadata struct {
-						Keys []string `custom:"keys,default=[ts]"`
+						Keys []string `custom:"keys" default:"[ts]"`
 					}
 				}
 				Application struct {
-					BuildDate time.Time `custom:"build_date,default=12-25-2012"`
+					BuildDate time.Time `custom:"build_date" default:"12-25-2012"`
 				}
 			}
 
@@ -416,9 +416,9 @@ func Test_fig_decodeMap(t *testing.T) {
 
 	var cfg struct {
 		Level    string `fig:"log_level"`
-		Severity int    `fig:"severity,required"`
+		Severity int    `fig:"severity" validate:"required"`
 		Server   struct {
-			Ports  []string `fig:"ports,default=[443]"`
+			Ports  []string `fig:"ports" default:"[443]"`
 			Secure bool
 		} `fig:"server"`
 	}
@@ -451,16 +451,15 @@ func Test_fig_processField(t *testing.T) {
 
 	t.Run("field with default", func(t *testing.T) {
 		cfg := struct {
-			X int `fig:"y,default=10"`
+			X int `fig:"y" default:"10"`
 		}{}
-
-		f := &field{
-			v:        reflect.ValueOf(&cfg).Elem().Field(0),
-			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
-			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
 			sliceIdx: -1,
 		}
 
+		f := newStructField(parent, 0, fig.tag)
 		err := fig.processField(f)
 		if err != nil {
 			t.Fatalf("processField() returned unexpected error: %v", err)
@@ -470,19 +469,18 @@ func Test_fig_processField(t *testing.T) {
 		}
 	})
 
-	t.Run("field with default does overwrite", func(t *testing.T) {
+	t.Run("field with default does not overwrite", func(t *testing.T) {
 		cfg := struct {
-			X int `fig:"y,default=10"`
+			X int `fig:"y" default:"10"`
 		}{}
 		cfg.X = 5
-
-		f := &field{
-			v:        reflect.ValueOf(&cfg).Elem().Field(0),
-			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
-			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
 			sliceIdx: -1,
 		}
 
+		f := newStructField(parent, 0, fig.tag)
 		err := fig.processField(f)
 		if err != nil {
 			t.Fatalf("processField() returned unexpected error: %v", err)
@@ -494,34 +492,15 @@ func Test_fig_processField(t *testing.T) {
 
 	t.Run("field with bad default", func(t *testing.T) {
 		cfg := struct {
-			X int `fig:"y,default=not-an-int"`
+			X int `fig:"y" default:"not-an-int"`
 		}{}
-
-		f := &field{
-			v:        reflect.ValueOf(&cfg).Elem().Field(0),
-			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
-			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
 			sliceIdx: -1,
 		}
 
-		err := fig.processField(f)
-		if err == nil {
-			t.Fatalf("processField() returned nil error")
-		}
-	})
-
-	t.Run("field with bad tag", func(t *testing.T) {
-		cfg := struct {
-			X int `fig:"y,default=10,required"`
-		}{}
-
-		f := &field{
-			v:        reflect.ValueOf(&cfg).Elem().Field(0),
-			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
-			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
-			sliceIdx: -1,
-		}
-
+		f := newStructField(parent, 0, fig.tag)
 		err := fig.processField(f)
 		if err == nil {
 			t.Fatalf("processField() returned nil error")
@@ -530,17 +509,16 @@ func Test_fig_processField(t *testing.T) {
 
 	t.Run("field with required", func(t *testing.T) {
 		cfg := struct {
-			X int `fig:"y,required"`
+			X int `fig:"y" validate:"required"`
 		}{}
 		cfg.X = 10
-
-		f := &field{
-			v:        reflect.ValueOf(&cfg).Elem().Field(0),
-			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
-			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
 			sliceIdx: -1,
 		}
 
+		f := newStructField(parent, 0, fig.tag)
 		err := fig.processField(f)
 		if err != nil {
 			t.Fatalf("processField() returned unexpected error: %v", err)
@@ -552,19 +530,35 @@ func Test_fig_processField(t *testing.T) {
 
 	t.Run("field with required error", func(t *testing.T) {
 		cfg := struct {
-			X int `fig:"y,required"`
+			X int `fig:"y" validate:"required"`
 		}{}
-
-		f := &field{
-			v:        reflect.ValueOf(&cfg).Elem().Field(0),
-			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
-			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
 			sliceIdx: -1,
 		}
 
+		f := newStructField(parent, 0, fig.tag)
 		err := fig.processField(f)
 		if err == nil {
 			t.Fatalf("processField() returned nil error")
+		}
+	})
+
+	t.Run("field with default and required", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y" default:"10" validate:"required"`
+		}{}
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
+			sliceIdx: -1,
+		}
+
+		f := newStructField(parent, 0, fig.tag)
+		err := fig.processField(f)
+		if err == nil {
+			t.Fatalf("processField() expected error")
 		}
 	})
 }
@@ -764,6 +758,12 @@ func Test_fig_setSlice(t *testing.T) {
 			InSlice:   &[]int{},
 			WantSlice: &[]int{5, 10, 15},
 			Val:       "[5,10,15]",
+		},
+		{
+			Name:      "ints-no-square-braces",
+			InSlice:   &[]int{},
+			WantSlice: &[]int{5, 10, 15},
+			Val:       "5,10,15",
 		},
 		{
 			Name:      "uints",

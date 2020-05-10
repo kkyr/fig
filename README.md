@@ -56,14 +56,14 @@ import (
 )
 
 type Config struct {
-  Build  time.Time `fig:"build,required"`
+  Build  time.Time `fig:"build" validate:"required"`
   Server struct {
-    Host    string        `fig:"host,default=127.0.0.1"`
-    Ports   []int         `fig:"ports,default=[80,443]"`
-    Cleanup time.Duration `fig:"cleanup,default=30m"`
+    Host    string        `fig:"host" default:"127.0.0.1"`
+    Ports   []int         `fig:"ports" default:"[80,443]"`
+    Cleanup time.Duration `fig:"cleanup" default:"30m"`
   }
   Logger struct {
-    Level string `fig:"level,default=info"`
+    Level string `fig:"level" default:"info"`
     Trace bool   `fig:"trace"`
   }
 }

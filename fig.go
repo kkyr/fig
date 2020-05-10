@@ -19,7 +19,8 @@ const (
 	DefaultFilename = "config.yaml"
 	// DefaultDir is the default directory that fig searches in for the config file.
 	DefaultDir = "."
-	// DefaultTag is the default struct tag name that fig uses for field metadata.
+	// DefaultTag is the default struct tag key that fig uses to find the field's alt
+	// name.
 	DefaultTag = "fig"
 	// DefaultTimeLayout is the default time layout that fig uses to parse times.
 	DefaultTimeLayout = time.RFC3339
@@ -161,7 +162,7 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 // the config file, by validating required fields and setting defaults
 // where applicable.
 func (f *fig) processCfg(cfg interface{}) error {
-	fields := flattenCfg(cfg)
+	fields := flattenCfg(cfg, f.tag)
 	errs := make(fieldErrors)
 
 	for _, field := range fields {
@@ -180,17 +181,16 @@ func (f *fig) processCfg(cfg interface{}) error {
 // processField processes a single field and is called by processCfg
 // for each field in cfg.
 func (f *fig) processField(field *field) error {
-	tag, err := field.parseTag(f.tag)
-	if err != nil {
-		return err
+	if field.required && field.setDefault {
+		return fmt.Errorf("field cannot have both a required validation and a default value")
 	}
 
-	if tag.required && isZero(field.v) {
-		return fmt.Errorf("required field not set")
+	if field.required && isZero(field.v) {
+		return fmt.Errorf("required validation failed")
 	}
 
-	if len(tag.defaultVal) > 0 && isZero(field.v) {
-		if err := f.setValue(field.v, tag.defaultVal); err != nil {
+	if field.setDefault && isZero(field.v) {
+		if err := f.setValue(field.v, field.defaultVal); err != nil {
 			return fmt.Errorf("unable to set default: %v", err)
 		}
 	}

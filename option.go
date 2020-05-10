@@ -35,8 +35,8 @@ func Dirs(dirs ...string) Option {
 	}
 }
 
-// Tag returns an option that configures the tag that fig uses
-// when searching for struct tags in fields.
+// Tag returns an option that configures the tag key that fig uses
+// when for the alt name struct tag key in fields.
 //
 //  fig.Load(&cfg, fig.Tag("config"))
 //
