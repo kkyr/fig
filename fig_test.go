@@ -2,6 +2,8 @@ package fig
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -445,6 +447,80 @@ func Test_fig_decodeMap(t *testing.T) {
 	}
 }
 
+func Test_fig_processCfg(t *testing.T) {
+	t.Run("slice elements set by env", func(t *testing.T) {
+		fig := defaultFig()
+		fig.tag = "fig"
+		fig.useEnv = true
+
+		os.Clearenv()
+		setenv(t, "A_0_B", "b0")
+		setenv(t, "A_1_B", "b1")
+		setenv(t, "A_0_C", "9000")
+
+		cfg := struct {
+			A []struct {
+				B string `validate:"required"`
+				C int    `default:"5"`
+			}
+		}{}
+		cfg.A = []struct {
+			B string `validate:"required"`
+			C int    `default:"5"`
+		}{{B: "boo"}, {B: "boo"}}
+
+		err := fig.processCfg(&cfg)
+		if err != nil {
+			t.Fatalf("processCfg() returned unexpected error: %v", err)
+		}
+		if cfg.A[0].B != "b0" {
+			t.Errorf("cfg.A[0].B == %s, expected %s", cfg.A[0].B, "b0")
+		}
+		if cfg.A[1].B != "b1" {
+			t.Errorf("cfg.A[1].B == %s, expected %s", cfg.A[1].B, "b1")
+		}
+		if cfg.A[0].C != 9000 {
+			t.Errorf("cfg.A[0].C == %d, expected %d", cfg.A[0].C, 9000)
+		}
+		if cfg.A[1].C != 5 {
+			t.Errorf("cfg.A[1].C == %d, expected %d", cfg.A[1].C, 5)
+		}
+	})
+
+	t.Run("embedded struct set by env", func(t *testing.T) {
+		fig := defaultFig()
+		fig.useEnv = true
+		fig.tag = "fig"
+
+		type A struct {
+			B string
+		}
+		type C struct {
+			D *int
+		}
+		type F struct {
+			A
+			C `fig:"cc"`
+		}
+		cfg := F{}
+
+		os.Clearenv()
+		setenv(t, "A_B", "embedded")
+		setenv(t, "CC_D", "7")
+
+		err := fig.processCfg(&cfg)
+		if err != nil {
+			t.Fatalf("processCfg() returned unexpected error: %v", err)
+		}
+		if cfg.A.B != "embedded" {
+			t.Errorf("cfg.A.B == %s, expected %s", cfg.A.B, "embedded")
+		}
+		if *cfg.C.D != 7 {
+			t.Errorf("cfg.C.D == %d, expected %d", *cfg.C.D, 7)
+		}
+	})
+}
+
 func Test_fig_processField(t *testing.T) {
 	fig := defaultFig()
 	fig.tag = "fig"
@@ -561,6 +637,113 @@ func Test_fig_processField(t *testing.T) {
 			t.Fatalf("processField() expected error")
 		}
 	})
+
+	t.Run("field overwritten by env", func(t *testing.T) {
+		fig := defaultFig()
+		fig.tag = "fig"
+		fig.useEnv = true
+		fig.envPrefix = "fig"
+
+		os.Clearenv()
+		setenv(t, "FIG_X", "MEN")
+
+		cfg := struct {
+			X string `fig:"x"`
+		}{}
+		cfg.X = "BOYS"
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
+			sliceIdx: -1,
+		}
+
+		f := newStructField(parent, 0, fig.tag)
+		err := fig.processField(f)
+		if err != nil {
+			t.Fatalf("processField() returned unexpected error: %v", err)
+		}
+		if cfg.X != "MEN" {
+			t.Errorf("cfg.X == %s, expected %s", cfg.X, "MEN")
+		}
+	})
+}
+
+func Test_fig_setFromEnv(t *testing.T) {
+	fig := defaultFig()
+	fig.envPrefix = "fig"
+
+	var s string
+	fv := reflect.ValueOf(&s)
+
+	os.Clearenv()
+	err := fig.setFromEnv(fv, "config.string")
+	if err != nil {
+		t.Fatalf("setFromEnv() unexpected error: %v", err)
+	}
+	if s != "" {
+		t.Fatalf("s modified to %s", s)
+	}
+
+	setenv(t, "FIG_CONFIG_STRING", "goroutine")
+	err = fig.setFromEnv(fv, "config.string")
+	if err != nil {
+		t.Fatalf("setFromEnv() unexpected error: %v", err)
+	}
+	if s != "goroutine" {
+		t.Fatalf("s == %s, expected %s", s, "goroutine")
+	}
+}
+
+func Test_fig_formatEnvKey(t *testing.T) {
+	fig := defaultFig()
+
+	for _, tc := range []struct {
+		key    string
+		prefix string
+		want   string
+	}{
+		{
+			key:  "port",
+			want: "PORT",
+		},
+		{
+			key:    "server.host",
+			prefix: "myapp",
+			want:   "MYAPP_SERVER_HOST",
+		},
+		{
+			key:  "loggers[0].log_level",
+			want: "LOGGERS_0_LOG_LEVEL",
+		},
+		{
+			key:  "nested[1].slice[2].twice",
+			want: "NESTED_1_SLICE_2_TWICE",
+		},
+		{
+			key:    "client.http.timeout",
+			prefix: "auth_s",
+			want:   "AUTH_S_CLIENT_HTTP_TIMEOUT",
+		},
+	} {
+		t.Run(fmt.Sprintf("%s/%s", tc.prefix, tc.key), func(t *testing.T) {
+			fig.envPrefix = tc.prefix
+			got := fig.formatEnvKey(tc.key)
+			if got != tc.want {
+				t.Errorf("formatEnvKey() == %s, expected %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func Test_fig_setDefaultValue(t *testing.T) {
+	fig := defaultFig()
+	var b bool
+	fv := reflect.ValueOf(&b).Elem()
+
+	err := fig.setDefaultValue(fv, "true")
+	if err == nil {
+		t.Fatalf("expected err")
+	}
 }
 
 func Test_fig_setValue(t *testing.T) {
@@ -594,16 +777,6 @@ func Test_fig_setValue(t *testing.T) {
 		}
 	})
 
-	t.Run("bool returns error", func(t *testing.T) {
-		var b bool
-		fv := reflect.ValueOf(&b).Elem()
-
-		err := fig.setValue(fv, "true")
-		if err == nil {
-			t.Fatalf("expected err")
-		}
-	})
-
 	t.Run("int", func(t *testing.T) {
 		var i int
 		fv := reflect.ValueOf(&i).Elem()
@@ -615,6 +788,20 @@ func Test_fig_setValue(t *testing.T) {
 
 		if i != -8 {
 			t.Fatalf("want %d, got %d", -8, i)
+		}
+	})
+
+	t.Run("bool", func(t *testing.T) {
+		var b bool
+		fv := reflect.ValueOf(&b).Elem()
+
+		err := fig.setValue(fv, "true")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		if !b {
+			t.Fatalf("want true")
 		}
 	})
 
@@ -824,6 +1011,12 @@ func Test_fig_setSlice(t *testing.T) {
 			t.Fatalf("expected err")
 		}
 	})
+}
+
+func setenv(t *testing.T, key, value string) {
+	if err := os.Setenv(key, value); err != nil {
+		t.Fatalf("os.Setenv() unexpected error: %v", err)
+	}
 }
 
 // func Test_fig_validate(t *testing.T) {

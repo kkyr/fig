@@ -3,6 +3,14 @@ Package fig loads configuration files into Go structs with extra juice for valid
 
 Config files may be defined in in yaml, json or toml format.
 
+When you call `Load()`, fig takes the following steps:
+
+  1. Finds config file
+  2. Loads file into config struct
+  3. Fills config struct from the environment (if enabled)
+  4. Sets defaults (where applicable)
+  5. Validates required fields (where applicable)
+
 Example
 
 Define your configuration file in the root of your project:
@@ -86,6 +94,51 @@ The struct tag key tag fig looks for to find the field's alt name can be changed
 
 By default fig uses the tag key `fig`.
 
+Environment
+
+Fig can be configured to additionally set fields using the environment. This will happen after the struct is loaded from a config file and thus any values found in the environment will overwrite existing values in the struct.
+
+This is meant to be used in conjunction with loading from a file. There is no support to ONLY load from the environment. You could, but you'd still have to provide an (empty) config file.
+
+This behaviour is disabled by default and can be enabled using the option `UseEnv(prefix)`. Prefix is a string that will be prepended to the keys that are searched in the environment. Although discouraged, prefix may be left empty.
+
+Fig searches for keys in the form PREFIX_FIELD_PATH, or if prefix is left empty then FIELD_PATH.
+
+A field's path is formed by prepending its name with the names of all the surrounding structs up to the root struct, upper-cased and separated by an underscore.
+
+If a field has an alt name defined in its struct tag then that name is preferred over its struct name.
+
+  type Config struct {
+    Build    time.Time
+    LogLevel string `fig:"log_level"`
+    Server   struct {
+      Host string
+    }
+  }
+
+With the struct above and `UseEnv("myapp")` fig would search for the following
+environment variables:
+
+  MYAPP_BUILD
+  MYAPP_LOG_LEVEL
+  MYAPP_SERVER_HOST
+
+Fields contained in struct slices whose elements already exists can be also be set via the environment in the form PARENT_IDX_FIELD, where idx is the index of the field in the slice.
+
+  type Config struct {
+    Server []struct {
+      Host string
+    }
+  }
+
+With the config above individual servers may be configured with the following environment variable:
+
+  MYAPP_SERVER_0_HOST
+  MYAPP_SERVER_1_HOST
+  ...
+
+Note: the Server slice must already have members inside it (i.e. from loading of the configuration file) for the containing fields to be altered via the environment. Fig will not instantiate and insert elements into the slice.
+
 Time
 
 Change the layout fig uses to parse times using `TimeLayout()`.
@@ -104,7 +157,7 @@ By default fig parses time using the `RFC.3339` layout (`2006-01-02T15:04:05Z07:
 
 Required
 
-A validation key with a required value in the field's struct tag makes fig check if the field has been set after it's been loaded. Required fields that are not set are returned as an error.
+A validate key with a required value in the field's struct tag makes fig check if the field has been set after it's been loaded. Required fields that are not set are returned as an error.
 
   type Config struct {
     Host string `fig:"host" validate:"required"` // or simply `validate:"required"`
@@ -183,7 +236,13 @@ Note: the default setter knows if it should fill a field or not by comparing if 
 
 Mutual exclusion
 
-The required validation and the default field tags are mutually exclusive. Setting both to a single field will result in an error.
+The required validation and the default field tags are mutually exclusive as they are contradictory.
+
+This is not allowed:
+
+  type Config struct {
+    Level string `validate:"required" default:"warn"` // will result in an error
+  }
 
 Errors
 

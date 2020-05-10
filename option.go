@@ -58,3 +58,38 @@ func TimeLayout(layout string) Option {
 		f.timeLayout = layout
 	}
 }
+
+// UseEnv returns an option that configures fig to additionally load values
+// from the environment, after it has loaded values from a config file.
+//
+//   fig.Load(&cfg, fig.UseEnv("my_app"))
+//
+// This is meant to be used in conjunction with loading from a file. There
+// is no support to ONLY load from the environment.
+//
+// Fig looks for environment variables in the format PREFIX_FIELD_PATH or
+// if prefix is empty FIELD_PATH. The field's path is formed by prepending
+// its name with the names of all surrounding fields up to the root struct.
+// If a field has an alternative name defined inside a struct tag  then that
+// name is preferred.
+//
+//   type Config struct {
+//     Build    time.Time
+//     LogLevel string `fig:"log_level"`
+//     Server   struct {
+//       Host string
+//     }
+//   }
+//
+// With the struct above and UseEnv("myapp") fig would search for the following
+// environment variables:
+//
+//   MYAPP_BUILD
+//   MYAPP_LOG_LEVEL
+//   MYAPP_SERVER_HOST
+func UseEnv(prefix string) Option {
+	return func(f *fig) {
+		f.useEnv = true
+		f.envPrefix = prefix
+	}
+}

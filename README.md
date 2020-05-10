@@ -13,11 +13,12 @@
 
 # fig
 
-fig loads your config file into a struct with additional support for marking fields as required and setting defaults.
+fig loads your config file into a struct with support for overwriting from the environment, validating fields and setting defaults.
 
 ## Why fig?
 
 - Define your **configuration**, **validations** and **defaults** all in a single struct
+- Optionally **load from the environment**
 - Only 3 external dependencies
 - Full support for`time.Time` & `time.Duration`
 - Tiny API
@@ -44,7 +45,7 @@ logger:
     trace: true
 ```
 
-Define your struct along with any _required_ or _default_ fields:
+Define your struct along with _validations_ or _defaults_:
 
 ```go
 package main
@@ -78,7 +79,7 @@ func main() {
 }
 ```
 
-If a field is not loaded from the config file and is marked as *required* then an error is returned. If a *default* value is defined instead then that value is used to populate the field.
+If a field is not set and is marked as *required* then an error is returned. If a *default* value is defined instead then that value is used to populate the field.
 
 Fig searches for a file named `config.yaml` in the directory it is run from. Change the lookup behaviour by passing additional parameters to `Load()`:
 
@@ -88,6 +89,12 @@ fig.Load(&cfg,
   fig.Dirs(".", "/etc/myapp", "/home/user/myapp"),
 ) // searches for ./settings.json, /etc/myapp/settings.json, /home/user/myapp/settings.json
 
+```
+
+Need to additionally fill fields using the environment? It's as simple as:
+
+```go
+fig.Load(&cfg, fig.UseEnv("MYAPP"))
 ```
 
 ## Usage

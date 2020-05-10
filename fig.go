@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -73,6 +74,8 @@ type fig struct {
 	dirs       []string
 	tag        string
 	timeLayout string
+	useEnv     bool
+	envPrefix  string
 }
 
 func (f *fig) Load(cfg interface{}) error {
@@ -185,17 +188,50 @@ func (f *fig) processField(field *field) error {
 		return fmt.Errorf("field cannot have both a required validation and a default value")
 	}
 
+	if f.useEnv {
+		if err := f.setFromEnv(field.v, field.path()); err != nil {
+			return fmt.Errorf("unable to set from env: %v", err)
+		}
+	}
+
 	if field.required && isZero(field.v) {
 		return fmt.Errorf("required validation failed")
 	}
 
 	if field.setDefault && isZero(field.v) {
-		if err := f.setValue(field.v, field.defaultVal); err != nil {
+		if err := f.setDefaultValue(field.v, field.defaultVal); err != nil {
 			return fmt.Errorf("unable to set default: %v", err)
 		}
 	}
 
 	return nil
+}
+
+func (f *fig) setFromEnv(fv reflect.Value, key string) error {
+	key = f.formatEnvKey(key)
+	if val, ok := os.LookupEnv(key); ok {
+		return f.setValue(fv, val)
+	}
+	return nil
+}
+
+func (f *fig) formatEnvKey(key string) string {
+	key = strings.Replace(key, ".", "_", -1) // loggers[0].level --> loggers[0]_level
+	key = strings.Replace(key, "[", "_", -1) // loggers[0]_level --> loggers_0]_level
+	key = strings.Replace(key, "]", "", -1)  // loggers_0]_level --> loggers_0_level
+	if f.envPrefix != "" {
+		key = fmt.Sprintf("%s_%s", f.envPrefix, key)
+	}
+	return strings.ToUpper(key)
+}
+
+// setDefaultValue delegets to setValue but disallows booleans from
+// being set.
+func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
+	if fv.Kind() == reflect.Bool {
+		return fmt.Errorf("unsupported type: %v", fv.Kind())
+	}
+	return f.setValue(fv, val)
 }
 
 // setValue sets fv to val. it attempts to convert val to the correct
@@ -213,6 +249,12 @@ func (f *fig) setValue(fv reflect.Value, val string) error {
 		if err := f.setSlice(fv, val); err != nil {
 			return err
 		}
+	case reflect.Bool:
+		b, err := strconv.ParseBool(val)
+		if err != nil {
+			return err
+		}
+		fv.SetBool(b)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if _, ok := fv.Interface().(time.Duration); ok {
 			d, err := time.ParseDuration(val)
