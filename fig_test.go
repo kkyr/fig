@@ -4,6 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -148,6 +149,20 @@ func Test_fig_Load(t *testing.T) {
 				t.Errorf("\nwant %+v\ngot %+v", want, cfg)
 			}
 		})
+	}
+}
+
+func Test_fig_Load_NonStructPtr(t *testing.T) {
+	cfg := struct {
+		X int
+	}{}
+	fig := defaultFig()
+	err := fig.Load(cfg)
+	if err == nil {
+		t.Fatalf("fig.Load() returned nil error")
+	}
+	if !strings.Contains(err.Error(), "pointer") {
+		t.Errorf("expected struct pointer err, got %v", err)
 	}
 }
 
@@ -430,6 +445,130 @@ func Test_fig_decodeMap(t *testing.T) {
 	}
 }
 
+func Test_fig_processField(t *testing.T) {
+	fig := defaultFig()
+	fig.tag = "fig"
+
+	t.Run("field with default", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y,default=10"`
+		}{}
+
+		f := &field{
+			v:        reflect.ValueOf(&cfg).Elem().Field(0),
+			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
+			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+			sliceIdx: -1,
+		}
+
+		err := fig.processField(f)
+		if err != nil {
+			t.Fatalf("processField() returned unexpected error: %v", err)
+		}
+		if cfg.X != 10 {
+			t.Errorf("cfg.X == %d, expected %d", cfg.X, 10)
+		}
+	})
+
+	t.Run("field with default does overwrite", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y,default=10"`
+		}{}
+		cfg.X = 5
+
+		f := &field{
+			v:        reflect.ValueOf(&cfg).Elem().Field(0),
+			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
+			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+			sliceIdx: -1,
+		}
+
+		err := fig.processField(f)
+		if err != nil {
+			t.Fatalf("processField() returned unexpected error: %v", err)
+		}
+		if cfg.X != 5 {
+			t.Errorf("cfg.X == %d, expected %d", cfg.X, 5)
+		}
+	})
+
+	t.Run("field with bad default", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y,default=not-an-int"`
+		}{}
+
+		f := &field{
+			v:        reflect.ValueOf(&cfg).Elem().Field(0),
+			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
+			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+			sliceIdx: -1,
+		}
+
+		err := fig.processField(f)
+		if err == nil {
+			t.Fatalf("processField() returned nil error")
+		}
+	})
+
+	t.Run("field with bad tag", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y,default=10,required"`
+		}{}
+
+		f := &field{
+			v:        reflect.ValueOf(&cfg).Elem().Field(0),
+			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
+			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+			sliceIdx: -1,
+		}
+
+		err := fig.processField(f)
+		if err == nil {
+			t.Fatalf("processField() returned nil error")
+		}
+	})
+
+	t.Run("field with required", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y,required"`
+		}{}
+		cfg.X = 10
+
+		f := &field{
+			v:        reflect.ValueOf(&cfg).Elem().Field(0),
+			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
+			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+			sliceIdx: -1,
+		}
+
+		err := fig.processField(f)
+		if err != nil {
+			t.Fatalf("processField() returned unexpected error: %v", err)
+		}
+		if cfg.X != 10 {
+			t.Errorf("cfg.X == %d, expected %d", cfg.X, 10)
+		}
+	})
+
+	t.Run("field with required error", func(t *testing.T) {
+		cfg := struct {
+			X int `fig:"y,required"`
+		}{}
+
+		f := &field{
+			v:        reflect.ValueOf(&cfg).Elem().Field(0),
+			t:        reflect.ValueOf(&cfg).Elem().Field(0).Type(),
+			st:       reflect.ValueOf(&cfg).Elem().Type().Field(0),
+			sliceIdx: -1,
+		}
+
+		err := fig.processField(f)
+		if err == nil {
+			t.Fatalf("processField() returned nil error")
+		}
+	})
+}
+
 func Test_fig_setValue(t *testing.T) {
 	fig := defaultFig()
 
@@ -499,6 +638,16 @@ func Test_fig_setValue(t *testing.T) {
 		}
 	})
 
+	t.Run("bad duration", func(t *testing.T) {
+		var d time.Duration
+		fv := reflect.ValueOf(&d).Elem()
+
+		err := fig.setValue(fv, "5decades")
+		if err == nil {
+			t.Fatalf("expexted err")
+		}
+	})
+
 	t.Run("uint", func(t *testing.T) {
 		var i uint
 		fv := reflect.ValueOf(&i).Elem()
@@ -524,6 +673,16 @@ func Test_fig_setValue(t *testing.T) {
 
 		if f != 0.015625 {
 			t.Fatalf("want %f, got %f", 0.015625, f)
+		}
+	})
+
+	t.Run("bad float", func(t *testing.T) {
+		var f float32
+		fv := reflect.ValueOf(&f).Elem()
+
+		err := fig.setValue(fv, "-i")
+		if err == nil {
+			t.Fatalf("expected err")
 		}
 	})
 
@@ -557,6 +716,16 @@ func Test_fig_setValue(t *testing.T) {
 
 		if !tme.Equal(want) {
 			t.Fatalf("want %v, got %v", want, tme)
+		}
+	})
+
+	t.Run("bad time", func(t *testing.T) {
+		var tme time.Time
+		fv := reflect.ValueOf(&tme).Elem()
+
+		err := fig.setValue(fv, "2020-Feb-01T00:00:00Z")
+		if err == nil {
+			t.Fatalf("expected err")
 		}
 	})
 
