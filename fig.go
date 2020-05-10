@@ -130,7 +130,6 @@ func (f *fig) decodeFile(file string) (map[string]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		for field, val := range tree.ToMap() {
 			vals[field] = val
 		}
