@@ -17,9 +17,9 @@ fig loads your config file into a struct with additional support for marking fie
 
 ## Why fig?
 
-- Define your config, validations and defaults all in a single struct
-- Full support for`time.Time` & `time.Duration`
+- Define your **configuration**, **validations** and **defaults** all in a single struct
 - Only 3 external dependencies
+- Full support for`time.Time` & `time.Duration`
 - Tiny API
 - Decoders for `.yaml`, `.json` and `.toml` files
 
@@ -44,7 +44,7 @@ logger:
     trace: true
 ```
 
-Define your struct along with any required and default fields:
+Define your struct along with any _required_ or _default_ fields:
 
 ```go
 package main
