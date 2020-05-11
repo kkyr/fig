@@ -13,13 +13,13 @@
 
 # fig
 
-fig loads your config file into a struct with support for overwriting from the environment, validating fields and setting defaults.
+fig is a tiny library for loading an application's config file and its environment into a Go struct. Individual fields can have default values defined or be marked as required.
 
 ## Why fig?
 
-- Define your **configuration**, **validations** and **defaults** all in a single struct
+- Define your **configuration**, **validations** and **defaults** in a single location
 - Optionally **load from the environment**
-- Only 3 external dependencies
+- Only **3** external dependencies
 - Full support for`time.Time` & `time.Duration`
 - Tiny API
 - Decoders for `.yaml`, `.json` and `.toml` files
