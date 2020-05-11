@@ -93,7 +93,7 @@ fig.Load(&cfg,
 
 ## Environment
 
-Need to additionally fill fields using the environment? It's as simple as:
+Need to additionally fill fields from the environment? It's as simple as:
 
 ```go
 fig.Load(&cfg, fig.UseEnv("MYAPP"))
