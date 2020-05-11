@@ -154,6 +154,19 @@ func Test_fig_Load(t *testing.T) {
 	}
 }
 
+func Test_fig_Load_FileNotFound(t *testing.T) {
+	fig := defaultFig()
+	fig.filename = "abrakadabra"
+	var cfg Pod
+	err := fig.Load(&cfg)
+	if err == nil {
+		t.Fatalf("expected err")
+	}
+	if !errors.Is(err, ErrFileNotFound) {
+		t.Errorf("expected err %v, got %v", ErrFileNotFound, err)
+	}
+}
+
 func Test_fig_Load_NonStructPtr(t *testing.T) {
 	cfg := struct {
 		X int
@@ -335,22 +348,39 @@ func Test_fig_Load_WithOptions(t *testing.T) {
 				Host   string `custom:"host" default:"127.0.0.1"`
 				Ports  []int  `custom:"ports" default:"[80,443]"`
 				Logger struct {
-					LogLevel string `custom:"log_level" default:"info"`
+					LogLevel string `custom:"log_level"`
 					Metadata struct {
-						Keys []string `custom:"keys" default:"[ts]"`
+						Keys []string `custom:"keys" default:"ts"`
+						Tag  string   `custom:"tag" validate:"required"`
 					}
+				}
+				Cache struct {
+					CleanupInterval time.Duration `custom:"cleanup_interval" validate:"required"`
+					FillThreshold   float32       `custom:"threshold" default:"0.9"`
 				}
 				Application struct {
 					BuildDate time.Time `custom:"build_date" default:"12-25-2012"`
+					Version   int
 				}
 			}
+
+			os.Clearenv()
+			setenv(t, "MYAPP_LOGGER_METADATA_TAG", "errorLogger")
+			setenv(t, "MYAPP_LOGGER_LOG_LEVEL", "error")
+			setenv(t, "MYAPP_APPLICATION_VERSION", "1")
+			setenv(t, "MYAPP_CACHE_CLEANUP_INTERVAL", "5m")
+			setenv(t, "MYAPP_CACHE_THRESHOLD", "0.85")
 
 			var want Server
 			want.Host = "0.0.0.0"
 			want.Ports = []int{80, 443}
-			want.Logger.LogLevel = "debug"
+			want.Logger.LogLevel = "error"
 			want.Logger.Metadata.Keys = []string{"ts"}
 			want.Application.BuildDate = time.Date(2012, 12, 25, 0, 0, 0, 0, time.UTC)
+			want.Logger.Metadata.Tag = "errorLogger"
+			want.Application.Version = 1
+			want.Cache.CleanupInterval = 5 * time.Minute
+			want.Cache.FillThreshold = 0.85
 
 			var cfg Server
 
@@ -359,6 +389,7 @@ func Test_fig_Load_WithOptions(t *testing.T) {
 				Dirs(filepath.Join("testdata", "valid")),
 				Tag("custom"),
 				TimeLayout("01-02-2006"),
+				UseEnv("myapp"),
 			)
 			if err != nil {
 				t.Fatalf("unexpected err: %v", err)
@@ -399,6 +430,44 @@ func Test_fig_findCfgFile(t *testing.T) {
 		}
 		if !errors.Is(err, ErrFileNotFound) {
 			t.Errorf("expected err %v, got %v", ErrFileNotFound, err)
+		}
+	})
+}
+
+func Test_fig_decodeFile(t *testing.T) {
+	fig := defaultFig()
+
+	for _, f := range []string{"bad.yaml", "bad.json", "bad.toml"} {
+		t.Run(f, func(t *testing.T) {
+			file := filepath.Join("testdata", "invalid", f)
+			if !fileExists(file) {
+				t.Fatalf("test file %s does not exist", file)
+			}
+			_, err := fig.decodeFile(file)
+			if err == nil {
+				t.Errorf("received nil error")
+			}
+		})
+	}
+
+	t.Run("unsupported file extension", func(t *testing.T) {
+		file := filepath.Join("testdata", "invalid", "list.hcl")
+		if !fileExists(file) {
+			t.Fatalf("test file %s does not exist", file)
+		}
+		_, err := fig.decodeFile(file)
+		if err == nil {
+			t.Fatal("received nil error")
+		}
+		if !strings.Contains(err.Error(), "unsupported") {
+			t.Errorf("err == %v, expected unsupported file extension", err)
+		}
+	})
+
+	t.Run("file does not exist", func(t *testing.T) {
+		_, err := fig.decodeFile("casperthefriendlygho.st")
+		if err == nil {
+			t.Fatal("received nil error")
 		}
 	})
 }
@@ -666,6 +735,31 @@ func Test_fig_processField(t *testing.T) {
 			t.Errorf("cfg.X == %s, expected %s", cfg.X, "MEN")
 		}
 	})
+
+	t.Run("field with bad env", func(t *testing.T) {
+		fig := defaultFig()
+		fig.tag = "fig"
+		fig.useEnv = true
+		fig.envPrefix = "fig"
+
+		os.Clearenv()
+		setenv(t, "FIG_I", "FIFTY")
+
+		cfg := struct {
+			I int
+		}{}
+		parent := &field{
+			v:        reflect.ValueOf(&cfg).Elem(),
+			t:        reflect.ValueOf(&cfg).Elem().Type(),
+			sliceIdx: -1,
+		}
+
+		f := newStructField(parent, 0, fig.tag)
+		err := fig.processField(f)
+		if err == nil {
+			t.Fatalf("processField() returned nil error")
+		}
+	})
 }
 
 func Test_fig_setFromEnv(t *testing.T) {
@@ -802,6 +896,16 @@ func Test_fig_setValue(t *testing.T) {
 
 		if !b {
 			t.Fatalf("want true")
+		}
+	})
+
+	t.Run("bad bool", func(t *testing.T) {
+		var b bool
+		fv := reflect.ValueOf(&b).Elem()
+
+		err := fig.setValue(fv, "αλήθεια")
+		if err == nil {
+			t.Fatalf("returned nil err")
 		}
 	})
 
