@@ -18,7 +18,7 @@ fig is a tiny library for loading an application's config file and its environme
 ## Why fig?
 
 - Define your **configuration**, **validations** and **defaults** in a single location
-- Optionally **load from the environment**
+- Optionally **load from the environment** as well
 - Only **3** external dependencies
 - Full support for`time.Time` & `time.Duration`
 - Tiny API
