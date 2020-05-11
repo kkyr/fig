@@ -101,8 +101,8 @@ fig.Load(&cfg, fig.UseEnv("MYAPP"))
 
 ## Usage
 
-See [godoc](https://godoc.org/github.com/kkyr/fig) for detailed usage documentation.
+See [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc) for detailed usage documentation.
 
 ## Contributing
 
-PRs are welcome! Please ensure you add relevant tests & documentation prior to making one.
+PRs are welcome! Please explain your motivation for the change in your PR and ensure your change is properly tested and documented.
