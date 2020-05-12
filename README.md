@@ -13,13 +13,14 @@
 
 # fig
 
-fig loads your config file into a struct with additional support for marking fields as required and setting defaults.
+fig is a tiny library for loading an application's config file and its environment into a Go struct. Individual fields can have default values defined or be marked as required.
 
 ## Why fig?
 
-- Define your config, validations and defaults all in a single struct
+- Define your **configuration**, **validations** and **defaults** in a single location
+- Optionally **load from the environment** as well
+- Only **3** external dependencies
 - Full support for`time.Time` & `time.Duration`
-- Only 3 external dependencies
 - Tiny API
 - Decoders for `.yaml`, `.json` and `.toml` files
 
@@ -44,7 +45,7 @@ logger:
     trace: true
 ```
 
-Define your struct along with any required and default fields:
+Define your struct along with _validations_ or _defaults_:
 
 ```go
 package main
@@ -56,14 +57,14 @@ import (
 )
 
 type Config struct {
-  Build  time.Time `fig:"build,required"`
+  Build  time.Time `fig:"build" validate:"required"`
   Server struct {
-    Host    string        `fig:"host,default=127.0.0.1"`
-    Ports   []int         `fig:"ports,default=[80,443]"`
-    Cleanup time.Duration `fig:"cleanup,default=30m"`
+    Host    string        `fig:"host" default:"127.0.0.1"`
+    Ports   []int         `fig:"ports" default:"[80,443]"`
+    Cleanup time.Duration `fig:"cleanup" default:"30m"`
   }
   Logger struct {
-    Level string `fig:"level,default=info"`
+    Level string `fig:"level" default:"info"`
     Trace bool   `fig:"trace"`
   }
 }
@@ -78,7 +79,7 @@ func main() {
 }
 ```
 
-If a field is not loaded from the config file and is marked as *required* then an error is returned. If a *default* value is defined instead then that value is used to populate the field.
+If a field is not set and is marked as *required* then an error is returned. If a *default* value is defined instead then that value is used to populate the field.
 
 Fig searches for a file named `config.yaml` in the directory it is run from. Change the lookup behaviour by passing additional parameters to `Load()`:
 
@@ -90,10 +91,18 @@ fig.Load(&cfg,
 
 ```
 
+## Environment
+
+Need to additionally fill fields from the environment? It's as simple as:
+
+```go
+fig.Load(&cfg, fig.UseEnv("MYAPP"))
+```
+
 ## Usage
 
-See [godoc](https://godoc.org/github.com/kkyr/fig) for detailed usage documentation.
+See [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc) for detailed usage documentation.
 
 ## Contributing
 
-PRs are welcome! Please ensure you add relevant tests & documentation prior to making one.
+PRs are welcome! Please explain your motivation for the change in your PR and ensure your change is properly tested and documented.

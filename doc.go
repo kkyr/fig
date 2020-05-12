@@ -3,6 +3,14 @@ Package fig loads configuration files into Go structs with extra juice for valid
 
 Config files may be defined in in yaml, json or toml format.
 
+When you call `Load()`, fig takes the following steps:
+
+  1. Finds config file
+  2. Loads file into config struct
+  3. Fills config struct from the environment (if enabled)
+  4. Sets defaults (where applicable)
+  5. Validates required fields (where applicable)
+
 Example
 
 Define your configuration file in the root of your project:
@@ -32,14 +40,14 @@ Define your struct and load it:
 
 
   type Config struct {
-    Build  time.Time `fig:"build,required"`
+    Build  time.Time `fig:"build" validate:"required"`
     Server struct {
-      Host    string        `fig:"host,default=127.0.0.1"`
-      Ports   []int         `fig:"ports,default=[80,443]"`
-      Cleanup time.Duration `fig:"cleanup,default=30m"`
+      Host    string        `fig:"host" default:"127.0.0.1"`
+      Ports   []int         `fig:"ports" default:"[80,443]"`
+      Cleanup time.Duration `fig:"cleanup" default:"30m"`
     }
     Logger struct {
-      Level string `fig:"level,default=info"`
+      Level string `fig:"level" default:"info"`
       Trace bool   `fig:"trace"`
     }
   }
@@ -74,24 +82,69 @@ The decoder (yaml/json/toml) used is picked based on the file's extension.
 
 Tag
 
-The name of the struct tag that fig uses can be changed with `Tag()`.
+The struct tag key tag fig looks for to find the field's alt name can be changed using `Tag()`.
 
   type Config struct {
-    Host  string `config:"host,required"`
-    Level string `config:"level,default=info"`
+    Host  string `yaml:"host" validate:"required"`
+    Level string `yaml:"level" default:"info"`
   }
 
   var cfg Config
-  fig.Load(&cfg, fig.Tag("config"))
+  fig.Load(&cfg, fig.Tag("yaml"))
 
-By default fig uses the tag name `fig`.
+By default fig uses the tag key `fig`.
+
+Environment
+
+Fig can be configured to additionally set fields using the environment. This will happen after the struct is loaded from a config file and thus any values found in the environment will overwrite existing values in the struct.
+
+This is meant to be used in conjunction with loading from a file. There is no support to ONLY load from the environment. You could, but you'd still have to provide an (empty) config file.
+
+This behaviour is disabled by default and can be enabled using the option `UseEnv(prefix)`. Prefix is a string that will be prepended to the keys that are searched in the environment. Although discouraged, prefix may be left empty.
+
+Fig searches for keys in the form PREFIX_FIELD_PATH, or if prefix is left empty then FIELD_PATH.
+
+A field's path is formed by prepending its name with the names of all the surrounding structs up to the root struct, upper-cased and separated by an underscore.
+
+If a field has an alt name defined in its struct tag then that name is preferred over its struct name.
+
+  type Config struct {
+    Build    time.Time
+    LogLevel string `fig:"log_level"`
+    Server   struct {
+      Host string
+    }
+  }
+
+With the struct above and `UseEnv("myapp")` fig would search for the following
+environment variables:
+
+  MYAPP_BUILD
+  MYAPP_LOG_LEVEL
+  MYAPP_SERVER_HOST
+
+Fields contained in struct slices whose elements already exists can be also be set via the environment in the form PARENT_IDX_FIELD, where idx is the index of the field in the slice.
+
+  type Config struct {
+    Server []struct {
+      Host string
+    }
+  }
+
+With the config above individual servers may be configured with the following environment variable:
+
+  MYAPP_SERVER_0_HOST
+  MYAPP_SERVER_1_HOST
+  ...
+
+Note: the Server slice must already have members inside it (i.e. from loading of the configuration file) for the containing fields to be altered via the environment. Fig will not instantiate and insert elements into the slice.
 
 Time
 
 Change the layout fig uses to parse times using `TimeLayout()`.
 
   type Config struct {
-    Date time.Time `fig:"date,default=12-25-2019"`
+    Date time.Time `fig:"date" default:"12-25-2019"`
   }
 
   var cfg Config
@@ -102,17 +155,12 @@ Change the layout fig uses to parse times using `TimeLayout()`.
 
 By default fig parses time using the `RFC.3339` layout (`2006-01-02T15:04:05Z07:00`).
 
-Validation
-
-Fields can be validated by adding an appropriate key to the field tag.
-A maximum of one validation may be added to each field.
-
 Required
 
-A required key in the field tag causes fig to check if the field has been set after it's loaded from the config file. Required fields that are not set are returned as an error.
+A validate key with a required value in the field's struct tag makes fig check if the field has been set after it's been loaded. Required fields that are not set are returned as an error.
 
   type Config struct {
-    Host string `fig:"host,required"` // or `fig:",required"
+    Host string `fig:"host" validate:"required"` // or simply `validate:"required"`
   }
 
 Fig uses the following properties to check if a field is set:
@@ -124,25 +172,25 @@ Fig uses the following properties to check if a field is set:
   time.Time:             !time.IsZero()
   time.Duration:         != 0
 
-  *non-nil pointers to non-struct types (except time.Time) are de-referenced and then checked
+  *pointers to non-struct types (with the exception of time.Time) are de-referenced if they are non-nil and then checked
 
 See example below to help understand:
 
   type Config struct {
-    A string    `fig:",required"`
-    B *string   `fig:",required"`
-    C int       `fig:",required"`
-    D *int      `fig:",required"`
-    E []float32 `fig:",required"`
-    F struct{}  `fig:",required"`
-    G *struct{} `fig:",required"`
+    A string    `validate:"required"`
+    B *string   `validate:"required"`
+    C int       `validate:"required"`
+    D *int      `validate:"required"`
+    E []float32 `validate:"required"`
+    F struct{}  `validate:"required"`
+    G *struct{} `validate:"required"`
     H struct {
-      I interface{} `fig:",required"`
-      J interface{} `fig:",required"`
-    } `fig:",required"`
-    K *[]bool    `fig:",required"`
-    L []uint     `fig:",required"`
-    M *time.Time `fig:",required"`
+      I interface{} `validate:"required"`
+      J interface{} `validate:"required"`
+    } `validate:"required"`
+    K *[]bool    `validate:"required"`
+    L []uint     `validate:"required"`
+    M *time.Time `validate:"required"`
   }
 
   var cfg Config
@@ -162,13 +210,12 @@ See example below to help understand:
 
 Default
 
-A default key in the field tag causes fig to fill the field with the value specified only if the field is not set.
-It must be in the format default=value.
+A default key in the field tag makes fig fill the field with the value specified when the field is not otherwise set.
 
 Fig attempts to parse the value based on the field's type. If parsing fails then an error is returned.
 
   type Config struct {
-    Port int `fig:"port,default=8000"` // or `fig:",default=8000"
+    Port int `fig:"port" default:"8000"` // or simply `default:"8000"`
   }
 
 
@@ -179,13 +226,23 @@ A default value can be set for the following types:
   time.Duration
   slices (of above types)
 
-Slice defaults must be enclosed in square brackets and successive values separated by a comma:
+Successive elements of slice defaults should be separated by a comma. The entire slice can optionally be enclosed in square brackets:
 
   type Config struct {
-    Durations []time.Duration `fig:",default=[30m,1h,90m,2h]"
+    Durations []time.Duration `default:"[30m,1h,90m,2h]"` // or `default:"30m,1h,90m,2h"`
   }
 
 Note: the default setter knows if it should fill a field or not by comparing if the current value of the field is equal to the corresponding zero value for that field's type. This happens after the configuration is loaded and has the implication that the zero value set explicitly by the user will get overwritten by any default value registered for that field. It's for this reason that defaults on booleans are not permitted, as a boolean field with a default value of `true` would always be true (since if it were set to false it'd be overwritten).
+
+Mutual exclusion
+
+The required validation and the default field tags are mutually exclusive as they are contradictory.
+
+This is not allowed:
+
+  type Config struct {
+    Level string `validate:"required" default:"warn"` // will result in an error
+  }
 
 Errors
 
