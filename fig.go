@@ -45,7 +45,7 @@ const (
 // field's struct tag.
 // If a field is not set by the configuration file then the default value is set.
 //
-//  type config struct {
+//  type Config struct {
 //    Level string `fig:"level" default:"info"` // or just `default:"info"`
 //  }
 //
