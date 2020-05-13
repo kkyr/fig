@@ -101,7 +101,11 @@ fig.Load(&cfg, fig.UseEnv("MYAPP"))
 
 ## Usage
 
-See [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc) for detailed usage documentation.
+See usage examples in [examples](/examples).
+
+## Documentation
+
+See [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc) for detailed documentation.
 
 ## Contributing
 

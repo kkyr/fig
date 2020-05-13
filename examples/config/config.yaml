@@ -1,0 +1,13 @@
+app:
+  environment: dev
+
+server:
+  port: 443
+  read_timeout: 1m
+
+logger:
+  level: debug
+
+certificate:
+  version: 1
+  expiration: 2020-12-01
