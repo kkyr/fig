@@ -216,9 +216,8 @@ func (f *fig) setFromEnv(fv reflect.Value, key string) error {
 }
 
 func (f *fig) formatEnvKey(key string) string {
-	key = strings.Replace(key, ".", "_", -1) // loggers[0].level --> loggers[0]_level
-	key = strings.Replace(key, "[", "_", -1) // loggers[0]_level --> loggers_0]_level
-	key = strings.Replace(key, "]", "", -1)  // loggers_0]_level --> loggers_0_level
+	// loggers[0].level --> loggers_0_level
+	key = strings.NewReplacer(".", "_", "[", "_", "]", "").Replace(key)
 	if f.envPrefix != "" {
 		key = fmt.Sprintf("%s_%s", f.envPrefix, key)
 	}
