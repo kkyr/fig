@@ -101,7 +101,7 @@ fig.Load(&cfg, fig.UseEnv("MYAPP"))
 
 ## Usage
 
-See usage examples in [examples](/examples).
+See usage [examples](/examples).
 
 ## Documentation
 
