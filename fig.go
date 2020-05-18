@@ -224,7 +224,7 @@ func (f *fig) formatEnvKey(key string) string {
 	return strings.ToUpper(key)
 }
 
-// setDefaultValue delegets to setValue but disallows booleans from
+// setDefaultValue calls setValue but disallows booleans from
 // being set.
 func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
 	if fv.Kind() == reflect.Bool {
