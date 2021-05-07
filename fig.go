@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
 	"gopkg.in/yaml.v2"
@@ -25,6 +26,10 @@ const (
 	DefaultTag = "fig"
 	// DefaultTimeLayout is the default time layout that fig uses to parse times.
 	DefaultTimeLayout = time.RFC3339
+	// DefaultProfileLayout represents default profile file layout.
+	// You should use `config` for filename, `test` for profile, `yaml` for extension.
+	// Example; config-test.yaml
+	DefaultProfileLayout = "config.test.yaml"
 )
 
 // Load reads a configuration file and loads it into the given struct. The
@@ -62,20 +67,24 @@ func Load(cfg interface{}, options ...Option) error {
 
 func defaultFig() *fig {
 	return &fig{
-		filename:   DefaultFilename,
-		dirs:       []string{DefaultDir},
-		tag:        DefaultTag,
-		timeLayout: DefaultTimeLayout,
+		filename:      DefaultFilename,
+		dirs:          []string{DefaultDir},
+		tag:           DefaultTag,
+		timeLayout:    DefaultTimeLayout,
+		profileLayout: DefaultProfileLayout,
 	}
 }
 
 type fig struct {
-	filename   string
-	dirs       []string
-	tag        string
-	timeLayout string
-	useEnv     bool
-	envPrefix  string
+	filename      string
+	dirs          []string
+	tag           string
+	timeLayout    string
+	useEnv        bool
+	envPrefix     string
+	useProfile    bool
+	profile       string
+	profileLayout string
 }
 
 func (f *fig) Load(cfg interface{}) error {
@@ -93,11 +102,47 @@ func (f *fig) Load(cfg interface{}) error {
 		return err
 	}
 
+	if f.useProfile {
+		profileFile, err := f.findProfileCfgFile()
+		if err != nil {
+			return err
+		}
+
+		profileVals, err := f.decodeFile(profileFile)
+		if err != nil {
+			return fmt.Errorf("%v, filename: %s", err, profileFile)
+		}
+
+		if err := mergo.MergeWithOverwrite(&vals, profileVals, mergo.WithSliceDeepCopy, mergo.WithTypeCheck); err != nil {
+			return err
+		}
+	}
+
 	if err := f.decodeMap(vals, cfg); err != nil {
 		return err
 	}
 
 	return f.processCfg(cfg)
+}
+
+func (f *fig) profileFileName() string {
+	filename := f.profileLayout
+	parts := strings.Split(f.filename, ".")
+	filename = strings.ReplaceAll(filename, "config", parts[0])
+	filename = strings.ReplaceAll(filename, "test", f.profile)
+	filename = strings.ReplaceAll(filename, "yaml", parts[1])
+	return filename
+}
+
+func (f *fig) findProfileCfgFile() (path string, err error) {
+	file := f.profileFileName()
+	for _, dir := range f.dirs {
+		path = filepath.Join(dir, file)
+		if fileExists(path) {
+			return
+		}
+	}
+	return "", fmt.Errorf("%s: %w", file, ErrFileNotFound)
 }
 
 func (f *fig) findCfgFile() (path string, err error) {
