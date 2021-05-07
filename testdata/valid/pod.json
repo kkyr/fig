@@ -2,7 +2,7 @@
 	"apiVersion": null,
 	"kind": "Pod",
 	"metadata": {
-		"name": "redis",
+		"name": "${POD_NAME:redis}",
 		"master": true
 	},
 	"spec": {

@@ -151,6 +151,7 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 		Result:           result,
 		TagName:          f.tag,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			fromEnvironmentHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToTimeHookFunc(f.timeLayout),
 		),
@@ -159,6 +160,31 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 		return err
 	}
 	return dec.Decode(m)
+}
+
+func fromEnvironmentHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String {
+			return data, nil
+		}
+
+		str := data.(string)
+		if !strings.HasPrefix(str, "${") || !strings.HasSuffix(str, "}") {
+			return data, nil
+		}
+
+		kv := str[2 : len(str)-1]
+		s := strings.Split(kv, ":")
+		envName, defaultVal := s[0], s[1]
+		if envValue, ok := os.LookupEnv(envName); ok {
+			return envValue, nil
+		} else {
+			return defaultVal, nil
+		}
+	}
 }
 
 // processCfg processes a cfg struct after it has been loaded from

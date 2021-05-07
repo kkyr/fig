@@ -154,6 +154,26 @@ func Test_fig_Load(t *testing.T) {
 	}
 }
 
+func Test_fig_Load_If_Env_Set_In_Conf_File(t *testing.T) {
+	os.Setenv("POD_NAME", "ehcache")
+	for _, f := range []string{"pod.yaml", "pod.json", "pod.toml"} {
+		t.Run(f, func(t *testing.T) {
+			var cfg Pod
+			err := Load(&cfg, File(f), Dirs(filepath.Join("testdata", "valid")))
+			if err != nil {
+				t.Fatalf("unexpected err: %v", err)
+			}
+
+			want := validPodConfig()
+			want.Metadata.Name = "ehcache"
+
+			if !reflect.DeepEqual(want, cfg) {
+				t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+			}
+		})
+	}
+}
+
 func Test_fig_Load_FileNotFound(t *testing.T) {
 	fig := defaultFig()
 	fig.filename = "abrakadabra"
@@ -394,6 +414,29 @@ func Test_fig_Load_WithOptions(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected err: %v", err)
 			}
+
+			if !reflect.DeepEqual(want, cfg) {
+				t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+			}
+		})
+	}
+}
+
+func Test_fig_Load_Server_If_Env_Set_In_Conf_File(t *testing.T) {
+	os.Setenv("SERVICE_HOST", "192.168.0.128")
+	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
+		t.Run(f, func(t *testing.T) {
+			type Server struct {
+				Host string `fig:"host"`
+			}
+
+			var cfg Server
+			err := Load(&cfg, File(f), Dirs(filepath.Join("testdata", "valid")))
+			if err != nil {
+				t.Fatalf("expected err")
+			}
+
+			want := Server{Host: "192.168.0.128"}
 
 			if !reflect.DeepEqual(want, cfg) {
 				t.Errorf("\nwant %+v\ngot %+v", want, cfg)
