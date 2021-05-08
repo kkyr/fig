@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -207,6 +208,34 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 	return dec.Decode(m)
 }
 
+func replaceEnvironments(str string) (result string, err error) {
+	re := regexp.MustCompile(`\$\{(.*?|)\}`)
+	result = str
+	for _, match := range re.FindAllStringSubmatch(str, -1) {
+
+		whole, value := match[0], match[1]
+		if value == "" {
+			return result, fmt.Errorf("environment name is missing")
+		}
+
+		s := strings.Split(value, ":")
+		envName := s[0]
+		if envValue, ok := os.LookupEnv(envName); ok {
+			result = strings.ReplaceAll(result, whole, envValue)
+
+		} else {
+			defaultVal := ""
+			if len(s) > 1 {
+				defaultVal = s[1]
+			}
+
+			result = strings.ReplaceAll(result, whole, defaultVal)
+		}
+
+	}
+	return result, err
+}
+
 func fromEnvironmentHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,
@@ -216,19 +245,7 @@ func fromEnvironmentHookFunc() mapstructure.DecodeHookFunc {
 			return data, nil
 		}
 
-		str := data.(string)
-		if !strings.HasPrefix(str, "${") || !strings.HasSuffix(str, "}") {
-			return data, nil
-		}
-
-		kv := str[2 : len(str)-1]
-		s := strings.Split(kv, ":")
-		envName, defaultVal := s[0], s[1]
-		if envValue, ok := os.LookupEnv(envName); ok {
-			return envValue, nil
-		} else {
-			return defaultVal, nil
-		}
+		return replaceEnvironments(data.(string))
 	}
 }
 

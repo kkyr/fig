@@ -154,6 +154,40 @@ func Test_fig_Load(t *testing.T) {
 	}
 }
 
+func Test_fig_replaceEnvironments(t *testing.T) {
+	os.Setenv("FOO", "XXX")
+	os.Setenv("BAR", "YYY")
+
+	tests := []struct {
+		name     string
+		text     string
+		want     string
+		hasError bool
+	}{
+		{name: "environment with default value", text: "/x/y/${BAZ:a}", want: "/x/y/a"},
+		{name: "no environment tag", text: "/x/y/z", want: "/x/y/z"},
+		{name: "from environment", text: "/x/y/${FOO}", want: "/x/y/XXX"},
+		{name: "environment when is not set", text: "/x/y/${BAZ}", want: "/x/y/"},
+		{name: "environment when is not set and default value is missing", text: "/x/y/${BAZ:}", want: "/x/y/"},
+		{name: "environment name is missing", text: "/x/y/${}", hasError: true},
+		{name: "multiple environment names", text: "/x/y/${FOO}/z/${BAR}", want: "/x/y/XXX/z/YYY"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if result, err := replaceEnvironments(test.text); err != nil {
+				if test.hasError && err == nil {
+					t.Error("not expected")
+				}
+			} else if test.want != result {
+				t.Error("not expected")
+			}
+		})
+
+	}
+
+}
+
 func Test_fig_Load_If_Env_Set_In_Conf_File(t *testing.T) {
 	os.Setenv("POD_NAME", "ehcache")
 	for _, f := range []string{"pod.yaml", "pod.json", "pod.toml"} {
