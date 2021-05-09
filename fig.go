@@ -211,7 +211,6 @@ func replaceEnvironments(str string) (result string, err error) {
 	re := regexp.MustCompile(`\$\{(.*?|)\}`)
 	result = str
 	for _, match := range re.FindAllStringSubmatch(str, -1) {
-
 		whole, value := match[0], match[1]
 		if value == "" {
 			return result, fmt.Errorf("environment name is missing")
@@ -221,16 +220,13 @@ func replaceEnvironments(str string) (result string, err error) {
 		envName := s[0]
 		if envValue, ok := os.LookupEnv(envName); ok {
 			result = strings.ReplaceAll(result, whole, envValue)
-
 		} else {
 			defaultVal := ""
 			if len(s) > 1 {
 				defaultVal = s[1]
 			}
-
 			result = strings.ReplaceAll(result, whole, defaultVal)
 		}
-
 	}
 	return result, err
 }

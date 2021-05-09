@@ -183,9 +183,7 @@ func Test_fig_replaceEnvironments(t *testing.T) {
 				t.Error("not expected")
 			}
 		})
-
 	}
-
 }
 
 func Test_fig_Load_If_Env_Set_In_Conf_File(t *testing.T) {
