@@ -1,0 +1,9 @@
+database:
+  host: "db"
+  port: 5432
+  name: "users"
+  username: "admin"
+  password: "postgres"
+kafka:
+  host:
+    - "kafka"

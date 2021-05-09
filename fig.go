@@ -83,8 +83,7 @@ type fig struct {
 	timeLayout    string
 	useEnv        bool
 	envPrefix     string
-	useProfile    bool
-	profile       string
+	profiles      []string
 	profileLayout string
 }
 
@@ -103,8 +102,8 @@ func (f *fig) Load(cfg interface{}) error {
 		return err
 	}
 
-	if f.useProfile {
-		profileFile, err := f.findProfileCfgFile()
+	for _, profile := range f.profiles {
+		profileFile, err := f.findProfileCfgFile(profile)
 		if err != nil {
 			return err
 		}
@@ -114,7 +113,7 @@ func (f *fig) Load(cfg interface{}) error {
 			return fmt.Errorf("%v, filename: %s", err, profileFile)
 		}
 
-		if err := mergo.MergeWithOverwrite(&vals, profileVals, mergo.WithSliceDeepCopy, mergo.WithTypeCheck); err != nil {
+		if err := mergo.Merge(&vals, profileVals, mergo.WithOverride, mergo.WithTypeCheck); err != nil {
 			return err
 		}
 	}
@@ -126,17 +125,17 @@ func (f *fig) Load(cfg interface{}) error {
 	return f.processCfg(cfg)
 }
 
-func (f *fig) profileFileName() string {
+func (f *fig) profileFileName(profile string) string {
 	filename := f.profileLayout
 	parts := strings.Split(f.filename, ".")
 	filename = strings.ReplaceAll(filename, "config", parts[0])
-	filename = strings.ReplaceAll(filename, "test", f.profile)
+	filename = strings.ReplaceAll(filename, "test", profile)
 	filename = strings.ReplaceAll(filename, "yaml", parts[1])
 	return filename
 }
 
-func (f *fig) findProfileCfgFile() (path string, err error) {
-	file := f.profileFileName()
+func (f *fig) findProfileCfgFile(profile string) (path string, err error) {
+	file := f.profileFileName(profile)
 	for _, dir := range f.dirs {
 		path = filepath.Join(dir, file)
 		if fileExists(path) {

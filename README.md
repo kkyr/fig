@@ -19,6 +19,8 @@ fig is a tiny library for loading an application's config file and its environme
 
 - Define your **configuration**, **validations** and **defaults** in a single location
 - Optionally **load from the environment** as well
+- Optionally **profiles** as well
+- Set environment variable in config file with default value
 - Only **3** external dependencies
 - Full support for`time.Time` & `time.Duration`
 - Tiny API
@@ -37,7 +39,7 @@ build: "2020-01-09T12:30:00Z"
 
 server:
     ports:
-      - 8080
+      - "${SERVER_PORT:8080}"
     cleanup: 1h
 
 logger:
@@ -88,6 +90,19 @@ fig.Load(&cfg,
   fig.File("settings.json"),
   fig.Dirs(".", "/etc/myapp", "/home/user/myapp"),
 ) // searches for ./settings.json, /etc/myapp/settings.json, /home/user/myapp/settings.json
+
+```
+
+### Profiles
+
+You can use `profiles` for other environments.
+
+```go
+fig.Load(&cfg,
+  fig.File("settings.json"),
+  fig.Profiles("test", "integration")
+  fig.ProfileLayout("config-test.yaml") // DEFAULT: config.test.yaml
+) // searches settings-test.json, settings-integration.json
 
 ```
 

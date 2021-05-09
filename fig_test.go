@@ -482,26 +482,31 @@ func Test_fig_Load_Server_If_Env_Set_In_Conf_File(t *testing.T) {
 func Test_fig_Load_Server_With_Profile(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {
+			fmt.Println(f)
 			type Server struct {
 				Host   string `fig:"host"`
 				Logger struct {
 					LogLevel string `fig:"log_level" default:"info"`
+					Appender string `fig:"appender"`
 				}
+				Replicas []string
 			}
 
 			var cfg Server
 			err := Load(&cfg,
 				File(f),
 				Dirs(filepath.Join("testdata", "valid")),
-				UseProfile("test"),
-				UseProfileLayout("config.test.yaml"),
+				Profiles("test"),
+				ProfileLayout("config.test.yaml"),
 			)
 			if err != nil {
 				t.Fatalf("expected err %v", err)
 			}
 
 			want := Server{Host: "192.168.0.256"}
-			want.Logger.LogLevel = "debug"
+			want.Logger.LogLevel = "error"
+			want.Logger.Appender = "file"
+			want.Replicas = []string{"xyz"}
 
 			if !reflect.DeepEqual(want, cfg) {
 				t.Errorf("\nwant %+v\ngot %+v", want, cfg)
@@ -530,8 +535,8 @@ func Test_fig_Load_Server_With_Profile_When_Config_Is_Invalid(t *testing.T) {
 					filepath.Join("testdata", "valid"),
 					filepath.Join("testdata", "invalid"),
 				),
-				UseProfile(test.profile),
-				UseProfileLayout("config-test.yaml"),
+				Profiles(test.profile),
+				ProfileLayout("config-test.yaml"),
 			)
 
 			if err == nil {
@@ -577,10 +582,9 @@ func Test_fig_findProfileCfgFile(t *testing.T) {
 	t.Run("finds existing file", func(t *testing.T) {
 		fig := defaultFig()
 		fig.filename = "server.yaml"
-		fig.profile = "test"
 		fig.dirs = []string{".", "testdata", filepath.Join("testdata", "valid")}
 
-		file, err := fig.findProfileCfgFile()
+		file, err := fig.findProfileCfgFile("test")
 		if err != nil {
 			t.Fatalf("unexpected err: %v", err)
 		}
@@ -594,10 +598,9 @@ func Test_fig_findProfileCfgFile(t *testing.T) {
 	t.Run("non-existing file returns ErrFileNotFound", func(t *testing.T) {
 		fig := defaultFig()
 		fig.filename = "server.yaml"
-		fig.profile = "e2e"
 		fig.dirs = []string{".", "testdata", filepath.Join("testdata", "valid")}
 
-		file, err := fig.findProfileCfgFile()
+		file, err := fig.findProfileCfgFile("e2e")
 		if err == nil {
 			t.Fatalf("expected err, got file %s", file)
 		}

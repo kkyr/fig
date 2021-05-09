@@ -1,6 +1,8 @@
 {
 	"host": "${SERVICE_HOST:0.0.0.0}",
 	"logger": {
-		"log_level": "debug"
-	}
+		"log_level": "debug",
+		"appender": "file"
+	},
+	"replicas": [ "abc","xyz" ]
 }

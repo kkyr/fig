@@ -95,24 +95,23 @@ func UseEnv(prefix string) Option {
 	}
 }
 
-// UseProfile returns an option that configures the profile key that fig uses
+// Profiles returns an option that configures the profile key that fig uses
 //
 //  fig.Load(&cfg, fig.UseProfile("test"))
 //
 // If this option is not used then fig uses the tag `fig`.
-func UseProfile(profile string) Option {
+func Profiles(profiles ...string) Option {
 	return func(f *fig) {
-		f.useProfile = true
-		f.profile = profile
+		f.profiles = profiles
 	}
 }
 
-// UseProfileLayout returns an option that configures the profile layout that fig uses
+// ProfileLayout returns an option that configures the profile layout that fig uses
 //
 //  fig.Load(&cfg, fig.UseProfileLayout("config-test.yaml"))
 //
 // If this option is not used then fig uses the tag `fig`.
-func UseProfileLayout(layout string) Option {
+func ProfileLayout(layout string) Option {
 	return func(f *fig) {
 		f.profileLayout = layout
 	}

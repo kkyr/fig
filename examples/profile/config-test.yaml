@@ -1,0 +1,9 @@
+database:
+  host: "sqlite:file.db"
+  port: -1
+  name: "users"
+  username: ""
+  password: ""
+kafka:
+  host:
+    - "embedded:kafka"
