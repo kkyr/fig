@@ -1,7 +1,6 @@
 package fig
 
 import (
-	"fmt"
 	"io"
 	"strings"
 )
@@ -35,7 +34,6 @@ func Reader(reader io.Reader, decoder Decoder) Option {
 
 // String returns an option that configure from string for reference configuration.
 func String(file string, decoder Decoder) Option {
-	fmt.Println(strings.TrimSpace(file))
 	return Reader(strings.NewReader(strings.TrimSpace(file)), decoder)
 }
 
