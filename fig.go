@@ -3,6 +3,7 @@ package fig
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -77,29 +78,45 @@ func defaultFig() *fig {
 }
 
 type fig struct {
-	filename      string
+	useEnv        bool
+	useReader     bool
 	dirs          []string
+	profiles      []string
+	filename      string
 	tag           string
 	timeLayout    string
-	useEnv        bool
 	envPrefix     string
-	profiles      []string
 	profileLayout string
+	readerConfig  io.Reader
+	readerDecoder Decoder
 }
 
-func (f *fig) Load(cfg interface{}) error {
+func (f *fig) Load(cfg interface{}) (err error) {
 	if !isStructPtr(cfg) {
 		return fmt.Errorf("cfg must be a pointer to a struct")
 	}
 
+	readerVals := make(map[string]interface{})
+
 	file, err := f.findCfgFile()
-	if err != nil {
+	if !f.useReader && err != nil {
 		return err
 	}
 
 	vals, err := f.decodeFile(file)
-	if err != nil {
+	if !f.useReader && err != nil {
 		return err
+	}
+
+	if f.useReader {
+		readerVals, err = f.decodeReader(f.readerConfig, f.readerDecoder)
+		if err != nil {
+			return err
+		}
+		if err := mergo.Merge(&readerVals, vals, mergo.WithOverride, mergo.WithTypeCheck); err != nil {
+			return err
+		}
+		vals = readerVals
 	}
 
 	for _, profile := range f.profiles {
@@ -163,19 +180,23 @@ func (f *fig) decodeFile(file string) (map[string]interface{}, error) {
 	}
 	defer fd.Close()
 
+	return f.decodeReader(fd, Decoder(filepath.Ext(file)))
+}
+
+func (f *fig) decodeReader(reader io.Reader, decoder Decoder) (map[string]interface{}, error) {
 	vals := make(map[string]interface{})
 
-	switch filepath.Ext(file) {
+	switch decoder {
 	case ".yaml", ".yml":
-		if err := yaml.NewDecoder(fd).Decode(&vals); err != nil {
+		if err := yaml.NewDecoder(reader).Decode(&vals); err != nil {
 			return nil, err
 		}
 	case ".json":
-		if err := json.NewDecoder(fd).Decode(&vals); err != nil {
+		if err := json.NewDecoder(reader).Decode(&vals); err != nil {
 			return nil, err
 		}
 	case ".toml":
-		tree, err := toml.LoadReader(fd)
+		tree, err := toml.LoadReader(reader)
 		if err != nil {
 			return nil, err
 		}

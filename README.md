@@ -25,6 +25,7 @@ fig is a tiny library for loading an application's config file and its environme
 - Full support for`time.Time` & `time.Duration`
 - Tiny API
 - Decoders for `.yaml`, `.json` and `.toml` files
+- Set String and Reader options for reference config. You can find example usage in `examples/reader` folder
 
 ## Getting Started
 

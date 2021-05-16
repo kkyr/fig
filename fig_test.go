@@ -477,6 +477,83 @@ func Test_fig_Load_Server_If_Env_Set_In_Conf_File(t *testing.T) {
 	}
 }
 
+func Test_fig_Load_String_Conf_File(t *testing.T) {
+	type Server struct {
+		Host string `fig:"host"`
+	}
+
+	var cfg Server
+	err := Load(&cfg, String(`host: "127.0.0.1"`, DecoderYaml))
+	if err != nil {
+		t.Fatalf("expected err: %v", err)
+	}
+
+	want := Server{Host: "127.0.0.1"}
+
+	if !reflect.DeepEqual(want, cfg) {
+		t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+	}
+}
+
+func Test_fig_Load_And_Merge_String_With_Conf_File(t *testing.T) {
+	os.Unsetenv("SERVICE_HOST")
+	type Server struct {
+		Host string `fig:"host"`
+	}
+
+	var cfg Server
+	err := Load(&cfg,
+		String(`host: "127.0.0.1"`, DecoderYaml),
+		File("server.yaml"),
+		Dirs(filepath.Join("testdata", "valid")),
+	)
+	if err != nil {
+		t.Fatalf("expected err: %v", err)
+	}
+
+	want := Server{Host: "0.0.0.0"}
+
+	if !reflect.DeepEqual(want, cfg) {
+		t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+	}
+}
+
+func Test_fig_Load_And_Merge_String_With_Environment_Variable(t *testing.T) {
+	os.Setenv("SERVICE_HOST", "192.168.0.128")
+	type Server struct {
+		Host string `fig:"host"`
+	}
+
+	var cfg Server
+	err := Load(&cfg,
+		String(`host: "127.0.0.1"`, DecoderYaml),
+		File("server.yaml"),
+		Dirs(filepath.Join("testdata", "valid")),
+	)
+	if err != nil {
+		t.Fatalf("expected err: %v", err)
+	}
+
+	want := Server{Host: "192.168.0.128"}
+
+	if !reflect.DeepEqual(want, cfg) {
+		t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+	}
+}
+
+func Test_fig_Return_Error_WhenLoad_Reader_Conf_File(t *testing.T) {
+	type Server struct {
+		Host string `fig:"host"`
+	}
+
+	byteConfig := strings.NewReader(`host: "127.0.0.1"`)
+	var cfg Server
+	err := Load(&cfg, Reader(byteConfig, DecoderJSON))
+	if err == nil {
+		t.Fatalf("it should be return error")
+	}
+}
+
 func Test_fig_Load_Server_With_Profile(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {

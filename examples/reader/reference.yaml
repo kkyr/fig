@@ -1,0 +1,10 @@
+database:
+  host: "db.prod.example.com"
+  port: 5432
+  name: "${DATABASE_NAME:users}"
+  username: "admin"
+  password: "S3cr3t-P455w0rd"
+kafka:
+  host:
+    - "kafka1.prod.example.com"
+    - "kafka2.prod.example.com"

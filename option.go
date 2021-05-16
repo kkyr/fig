@@ -1,5 +1,11 @@
 package fig
 
+import (
+	"fmt"
+	"io"
+	"strings"
+)
+
 // Option configures how fig loads the configuration.
 type Option func(f *fig)
 
@@ -16,6 +22,21 @@ func File(name string) Option {
 	return func(f *fig) {
 		f.filename = name
 	}
+}
+
+// Reader returns an option that configure from reader for reference configuration.
+func Reader(reader io.Reader, decoder Decoder) Option {
+	return func(f *fig) {
+		f.useReader = true
+		f.readerConfig = reader
+		f.readerDecoder = decoder
+	}
+}
+
+// String returns an option that configure from string for reference configuration.
+func String(file string, decoder Decoder) Option {
+	fmt.Println(strings.TrimSpace(file))
+	return Reader(strings.NewReader(strings.TrimSpace(file)), decoder)
 }
 
 // Dirs returns an option that configures the directories that fig searches
