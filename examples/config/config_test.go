@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/kkyr/fig"
@@ -18,7 +19,8 @@ type Config struct {
 		WriteTimeout time.Duration `fig:"write_timeout" default:"30s"`
 	} `fig:"server"`
 	Logger struct {
-		Level string `fig:"level" default:"info"`
+		Level   string         `fig:"level" default:"info"`
+		Pattern *regexp.Regexp `fig:"pattern" default:".*"`
 	} `fig:"logger"`
 	Certificate struct {
 		Version    int       `fig:"version"`
@@ -40,6 +42,7 @@ func ExampleLoad() {
 	fmt.Println(cfg.Server.ReadTimeout)
 	fmt.Println(cfg.Server.WriteTimeout)
 	fmt.Println(cfg.Logger.Level)
+	fmt.Println(cfg.Logger.Pattern)
 	fmt.Println(cfg.Certificate.Version)
 	fmt.Println(cfg.Certificate.DNSNames)
 	fmt.Println(cfg.Certificate.Expiration.Format("2006-01-02"))
@@ -51,6 +54,7 @@ func ExampleLoad() {
 	// 1m0s
 	// 30s
 	// debug
+	// [a-z]+
 	// 1
 	// [kkyr kkyr.io]
 	// 2020-12-01

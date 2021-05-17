@@ -3,6 +3,7 @@ package fig
 import (
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -133,6 +134,22 @@ func Test_isZero(t *testing.T) {
 		td := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
 		if isZero(reflect.ValueOf(td)) == true {
+			t.Fatalf("isZero == true")
+		}
+	})
+
+	t.Run("zero regexp is zero", func(t *testing.T) {
+		var re *regexp.Regexp
+
+		if isZero(reflect.ValueOf(re)) == false {
+			t.Fatalf("isZero == false")
+		}
+	})
+
+	t.Run("non-zero regexp is not zero", func(t *testing.T) {
+		re := regexp.MustCompile(".*")
+
+		if isZero(reflect.ValueOf(re)) == true {
 			t.Fatalf("isZero == true")
 		}
 	})

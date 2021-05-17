@@ -20,7 +20,7 @@ fig is a tiny library for loading an application's config file and its environme
 - Define your **configuration**, **validations** and **defaults** in a single location
 - Optionally **load from the environment** as well
 - Only **3** external dependencies
-- Full support for`time.Time` & `time.Duration`
+- Full support for`time.Time`, `time.Duration` & `regexp.Regexp`
 - Tiny API
 - Decoders for `.yaml`, `.json` and `.toml` files
 
@@ -64,8 +64,9 @@ type Config struct {
     Cleanup time.Duration `fig:"cleanup" default:"30m"`
   }
   Logger struct {
-    Level string `fig:"level" default:"info"`
-    Trace bool   `fig:"trace"`
+    Level   string         `fig:"level" default:"info"`
+    Pattern *regexp.Regexp `fig:"pattern" default:".*"`
+    Trace   bool           `fig:"trace"`
   }
 }
 
@@ -75,7 +76,7 @@ func main() {
   // handle your err
   
   fmt.Printf("%+v\n", cfg)
-  // Output: {Build:2019-12-25 00:00:00 +0000 UTC Server:{Host:127.0.0.1 Ports:[8080] Cleanup:1h0m0s} Logger:{Level:warn Trace:true}}
+  // Output: {Build:2019-12-25 00:00:00 +0000 UTC Server:{Host:127.0.0.1 Ports:[8080] Cleanup:1h0m0s} Logger:{Level:warn Pattern:.* Trace:true}}
 }
 ```
 
