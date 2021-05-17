@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -289,6 +290,12 @@ func (f *fig) setValue(fv reflect.Value, val string) error {
 				return err
 			}
 			fv.Set(reflect.ValueOf(t))
+		} else if _, ok := fv.Interface().(regexp.Regexp); ok {
+			re, err := regexp.Compile(val)
+			if err != nil {
+				return err
+			}
+			fv.Set(reflect.ValueOf(*re))
 		} else {
 			return fmt.Errorf("unsupported type %s", fv.Kind())
 		}
