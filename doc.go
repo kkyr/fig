@@ -188,9 +188,10 @@ See example below to help understand:
       I interface{} `validate:"required"`
       J interface{} `validate:"required"`
     } `validate:"required"`
-    K *[]bool    `validate:"required"`
-    L []uint     `validate:"required"`
-    M *time.Time `validate:"required"`
+    K *[]bool        `validate:"required"`
+    L []uint         `validate:"required"`
+    M *time.Time     `validate:"required"`
+    N *regexp.Regexp `validate:"required"`
   }
 
   var cfg Config
@@ -206,7 +207,7 @@ See example below to help understand:
 
   err := fig.Load(&cfg)
   fmt.Print(err)
-  // A: required, B: required, C: required, D: required, E: required, G: required, H.J: required, K: required, M: required
+  // A: required validation failed, B: required validation failed, C: required validation failed, D: required validation failed, E: required validation failed, G: required validation failed, H.J: required validation failed, K: required validation failed, M: required validation failed, N: required validation failed
 
 Default
 
@@ -224,6 +225,7 @@ A default value can be set for the following types:
   all basic types except bool and complex
   time.Time
   time.Duration
+  *regexp.Regexp
   slices (of above types)
 
 Successive elements of slice defaults should be separated by a comma. The entire slice can optionally be enclosed in square brackets:

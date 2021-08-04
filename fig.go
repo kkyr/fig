@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -153,12 +154,29 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToTimeHookFunc(f.timeLayout),
+			stringToRegexpHookFunc(),
 		),
 	})
 	if err != nil {
 		return err
 	}
 	return dec.Decode(m)
+}
+
+// stringToRegexpHookFunc returns a DecodeHookFunc that converts strings to regexp.Regexp.
+func stringToRegexpHookFunc() mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String {
+			return data, nil
+		}
+		if t != reflect.TypeOf(&regexp.Regexp{}) {
+			return data, nil
+		}
+		return regexp.Compile(data.(string))
+	}
 }
 
 // processCfg processes a cfg struct after it has been loaded from
@@ -289,6 +307,12 @@ func (f *fig) setValue(fv reflect.Value, val string) error {
 				return err
 			}
 			fv.Set(reflect.ValueOf(t))
+		} else if _, ok := fv.Interface().(regexp.Regexp); ok {
+			re, err := regexp.Compile(val)
+			if err != nil {
+				return err
+			}
+			fv.Set(reflect.ValueOf(*re))
 		} else {
 			return fmt.Errorf("unsupported type %s", fv.Kind())
 		}

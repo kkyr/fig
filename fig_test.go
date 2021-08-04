@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -221,8 +222,9 @@ func Test_fig_Load_Defaults(t *testing.T) {
 					Host   string `fig:"host" default:"127.0.0.1"`
 					Ports  []int  `fig:"ports" default:"[80,443]"`
 					Logger struct {
-						LogLevel   string `fig:"log_level" default:"info"`
-						Production bool   `fig:"production"`
+						LogLevel   string         `fig:"log_level" default:"info"`
+						Pattern    *regexp.Regexp `fig:"pattern" default:".*"`
+						Production bool           `fig:"production"`
 						Metadata   struct {
 							Keys []string `fig:"keys" default:"[ts]"`
 						}
@@ -236,6 +238,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 				want.Host = "0.0.0.0"
 				want.Ports = []int{80, 443}
 				want.Logger.LogLevel = "debug"
+				want.Logger.Pattern = regexp.MustCompile(".*")
 				want.Logger.Production = false
 				want.Logger.Metadata.Keys = []string{"ts"}
 				want.Application.BuildDate = time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -1014,6 +1017,35 @@ func Test_fig_setValue(t *testing.T) {
 		}
 	})
 
+	t.Run("regexp", func(t *testing.T) {
+		var re regexp.Regexp
+		fv := reflect.ValueOf(&re).Elem()
+
+		err := fig.setValue(fv, "[a-z]+")
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		want, err := regexp.Compile("[a-z]+")
+		if err != nil {
+			t.Fatalf("error parsing time: %v", err)
+		}
+
+		if re.String() != want.String() {
+			t.Fatalf("want %v, got %v", want, re)
+		}
+	})
+
+	t.Run("bad regexp", func(t *testing.T) {
+		var re regexp.Regexp
+		fv := reflect.ValueOf(&re).Elem()
+
+		err := fig.setValue(fv, "[a-")
+		if err == nil {
+			t.Fatalf("expected err")
+		}
+	})
+
 	t.Run("interface returns error", func(t *testing.T) {
 		var i interface{}
 		fv := reflect.ValueOf(i)
@@ -1088,6 +1120,15 @@ func Test_fig_setSlice(t *testing.T) {
 				time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			Val: "[2019-12-25T10:30:30Z,2020-01-01T00:00:00Z]",
+		},
+		{
+			Name:    "regexps",
+			InSlice: &[]*regexp.Regexp{},
+			WantSlice: &[]*regexp.Regexp{
+				regexp.MustCompile("[a-z]+"),
+				regexp.MustCompile(".*"),
+			},
+			Val: "[[a-z]+,.*]",
 		},
 	} {
 		t.Run(tc.Val, func(t *testing.T) {
