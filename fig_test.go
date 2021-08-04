@@ -497,8 +497,7 @@ func Test_fig_decodeMap(t *testing.T) {
 		} `fig:"server"`
 	}
 
-	err := fig.decodeMap(m, &cfg)
-	if err != nil {
+	if err := fig.decodeMap(m, &cfg); err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
 
@@ -1026,12 +1025,7 @@ func Test_fig_setValue(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 
-		want, err := regexp.Compile("[a-z]+")
-		if err != nil {
-			t.Fatalf("error parsing time: %v", err)
-		}
-
-		if re.String() != want.String() {
+		if want := regexp.MustCompile("[a-z]+"); re.String() != want.String() {
 			t.Fatalf("want %v, got %v", want, re)
 		}
 	})
@@ -1159,6 +1153,7 @@ func Test_fig_setSlice(t *testing.T) {
 }
 
 func setenv(t *testing.T, key, value string) {
+	t.Helper()
 	if err := os.Setenv(key, value); err != nil {
 		t.Fatalf("os.Setenv() unexpected error: %v", err)
 	}

@@ -4,6 +4,13 @@ linters:
     - wsl
     - gomnd
     - testpackage
+    - wrapcheck
+    - nlreturn
+    - goerr113
+    - exhaustivestruct
+    - exhaustive
+    - cyclop
+    - funlen
 
 issues:
   exclude-rules:
@@ -16,6 +23,9 @@ issues:
         - funlen
         - scopelint
         - gocognit
+        - paralleltest
+        - errorlint
+        - forcetypeassert
     - path: doc\.go
       linters:
         - lll

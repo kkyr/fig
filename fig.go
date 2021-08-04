@@ -208,7 +208,7 @@ func (f *fig) processField(field *field) error {
 
 	if f.useEnv {
 		if err := f.setFromEnv(field.v, field.path()); err != nil {
-			return fmt.Errorf("unable to set from env: %v", err)
+			return fmt.Errorf("unable to set from env: %w", err)
 		}
 	}
 
@@ -218,7 +218,7 @@ func (f *fig) processField(field *field) error {
 
 	if field.setDefault && isZero(field.v) {
 		if err := f.setDefaultValue(field.v, field.defaultVal); err != nil {
-			return fmt.Errorf("unable to set default: %v", err)
+			return fmt.Errorf("unable to set default: %w", err)
 		}
 	}
 

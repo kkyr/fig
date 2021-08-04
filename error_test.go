@@ -13,8 +13,7 @@ func Test_fieldErrors_Error(t *testing.T) {
 
 	got := fe.Error()
 
-	want := "A: aerr, B: berr"
-	if want != got {
+	if want := "A: aerr, B: berr"; want != got {
 		t.Fatalf("want %q, got %q", want, got)
 	}
 
