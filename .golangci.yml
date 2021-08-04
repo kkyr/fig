@@ -4,12 +4,8 @@ linters:
     - wsl
     - gomnd
     - testpackage
-    - wrapcheck
-    - nlreturn
     - goerr113
-    - exhaustivestruct
     - exhaustive
-    - cyclop
     - funlen
 
 issues:
