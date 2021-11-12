@@ -76,6 +76,7 @@ type fig struct {
 	tag        string
 	timeLayout string
 	useEnv     bool
+	ignoreFile bool
 	envPrefix  string
 }
 
@@ -84,14 +85,19 @@ func (f *fig) Load(cfg interface{}) error {
 		return fmt.Errorf("cfg must be a pointer to a struct")
 	}
 
-	file, err := f.findCfgFile()
-	if err != nil {
-		return err
-	}
+	vals := make(map[string]interface{})
 
-	vals, err := f.decodeFile(file)
-	if err != nil {
-		return err
+	if !f.ignoreFile {
+
+		file, err := f.findCfgFile()
+		if err != nil {
+			return err
+		}
+
+		vals, err = f.decodeFile(file)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := f.decodeMap(vals, cfg); err != nil {
