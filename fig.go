@@ -88,7 +88,6 @@ func (f *fig) Load(cfg interface{}) error {
 	vals := make(map[string]interface{})
 
 	if !f.ignoreFile {
-
 		file, err := f.findCfgFile()
 		if err != nil {
 			return err
