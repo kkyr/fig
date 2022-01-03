@@ -18,6 +18,19 @@ func File(name string) Option {
 	}
 }
 
+// IgnoreFile returns an option which disables any file lookup.
+//
+// This option effectively renders any `File` and `Dir` options useless. This option
+// is most useful in conjunction with the `UseEnv` option when you want to provide
+// config values only via environment variables.
+//
+//   fig.Load(&cfg, fig.IgnoreFile(), fig.UseEnv("my_app"))
+func IgnoreFile() Option {
+	return func(f *fig) {
+		f.ignoreFile = true
+	}
+}
+
 // Dirs returns an option that configures the directories that fig searches
 // to find the configuration file.
 //
@@ -60,12 +73,11 @@ func TimeLayout(layout string) Option {
 }
 
 // UseEnv returns an option that configures fig to additionally load values
-// from the environment, after it has loaded values from a config file.
+// from the environment.
 //
 //   fig.Load(&cfg, fig.UseEnv("my_app"))
 //
-// This is meant to be used in conjunction with loading from a file. There
-// is no support to ONLY load from the environment.
+// Values loaded from the environment overwrite values loaded by the config file (if any).
 //
 // Fig looks for environment variables in the format PREFIX_FIELD_PATH or
 // FIELD_PATH if prefix is empty. Prefix is capitalised regardless of what

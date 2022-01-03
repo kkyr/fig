@@ -1,15 +1,14 @@
 /*
-Package fig loads configuration files into Go structs with extra juice for validating fields and setting defaults.
+Package fig loads configuration files and/or environment variables into Go structs with extra juice for validating fields and setting defaults.
 
-Config files may be defined in in yaml, json or toml format.
+Config files may be defined in yaml, json or toml format.
 
 When you call `Load()`, fig takes the following steps:
 
-  1. Finds config file
-  2. Loads file into config struct
-  3. Fills config struct from the environment (if enabled)
-  4. Sets defaults (where applicable)
-  5. Validates required fields (where applicable)
+  1. Fills config struct from the config file (if enabled)
+  2. Fills config struct from the environment (if enabled)
+  3. Sets defaults (where applicable)
+  4. Validates required fields (where applicable)
 
 Example
 
@@ -60,16 +59,22 @@ Define your struct and load it:
    // Output: {Build:2019-12-25 00:00:00 +0000 UTC Server:{Host:127.0.0.1 Ports:[8080] Cleanup:1h0m0s} Logger:{Level:warn Trace:true}}
  }
 
-By default fig searches for a file named `config.yaml` in the directory it is run from.
-It can be configured to look elsewhere.
-
 Configuration
 
 Pass options as additional parameters to `Load()` to configure fig's behaviour.
 
-File
+IgnoreFile
 
-Change the file and directories fig searches in with `File()`.
+Do not look for any configuration file with `IgnoreFile()`.
+
+  fig.Load(&cfg, fig.IgnoreFile())
+
+If IgnoreFile is given then any other configuration file related options like `File` and `Dirs` are simply ignored.
+
+File & Dirs
+
+By default fig searches for a file named `config.yaml` in the directory it is run from. Change the file and directories fig
+searches in with `File()` and `Dirs()`.
 
   fig.Load(&cfg,
     fig.File("settings.json"),
@@ -96,11 +101,11 @@ By default fig uses the tag key `fig`.
 
 Environment
 
-Fig can be configured to additionally set fields using the environment. This will happen after the struct is loaded from a config file and thus any values found in the environment will overwrite existing values in the struct.
+Fig can be configured to additionally set fields using the environment.
+This behaviour can be enabled using the option `UseEnv(prefix)`. If loading from file is also enabled then first the struct is loaded
+from a config file and thus any values found in the environment will overwrite existing values in the struct.
 
-This is meant to be used in conjunction with loading from a file. There is no support to ONLY load from the environment. You could, but you'd still have to provide an (empty) config file.
-
-This behaviour is disabled by default and can be enabled using the option `UseEnv(prefix)`. Prefix is a string that will be prepended to the keys that are searched in the environment. Although discouraged, prefix may be left empty.
+Prefix is a string that will be prepended to the keys that are searched in the environment. Although discouraged, prefix may be left empty.
 
 Fig searches for keys in the form PREFIX_FIELD_PATH, or if prefix is left empty then FIELD_PATH.
 

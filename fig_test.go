@@ -405,6 +405,64 @@ func Test_fig_Load_WithOptions(t *testing.T) {
 	}
 }
 
+func Test_fig_Load_IgnoreFile(t *testing.T) {
+	type Server struct {
+		Host   string `custom:"host" default:"127.0.0.1"`
+		Ports  []int  `custom:"ports" default:"[80,443]"`
+		Logger struct {
+			LogLevel string `custom:"log_level"`
+			Metadata struct {
+				Keys []string `custom:"keys" default:"ts"`
+				Tag  string   `custom:"tag" validate:"required"`
+			}
+		}
+		Cache struct {
+			CleanupInterval time.Duration `custom:"cleanup_interval" validate:"required"`
+			FillThreshold   float32       `custom:"threshold" default:"0.9"`
+		}
+		Application struct {
+			BuildDate time.Time `custom:"build_date" default:"12-25-2012"`
+			Version   int
+		}
+	}
+
+	os.Clearenv()
+	setenv(t, "MYAPP_HOST", "0.0.0.0")
+	setenv(t, "MYAPP_PORTS", "[8888,443]")
+	setenv(t, "MYAPP_LOGGER_METADATA_TAG", "errorLogger")
+	setenv(t, "MYAPP_LOGGER_LOG_LEVEL", "error")
+	setenv(t, "MYAPP_APPLICATION_VERSION", "1")
+	setenv(t, "MYAPP_CACHE_CLEANUP_INTERVAL", "5m")
+	setenv(t, "MYAPP_CACHE_THRESHOLD", "0.85")
+
+	var want Server
+	want.Host = "0.0.0.0"
+	want.Ports = []int{8888, 443}
+	want.Logger.LogLevel = "error"
+	want.Logger.Metadata.Keys = []string{"ts"}
+	want.Application.BuildDate = time.Date(2012, 12, 25, 0, 0, 0, 0, time.UTC)
+	want.Logger.Metadata.Tag = "errorLogger"
+	want.Application.Version = 1
+	want.Cache.CleanupInterval = 5 * time.Minute
+	want.Cache.FillThreshold = 0.85
+
+	var cfg Server
+
+	err := Load(&cfg,
+		IgnoreFile(),
+		Tag("custom"),
+		TimeLayout("01-02-2006"),
+		UseEnv("myapp"),
+	)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	if !reflect.DeepEqual(want, cfg) {
+		t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+	}
+}
+
 func Test_fig_findCfgFile(t *testing.T) {
 	t.Run("finds existing file", func(t *testing.T) {
 		fig := defaultFig()
