@@ -13,7 +13,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -38,17 +38,17 @@ const (
 // A field can be marked as required by adding a `required` key in the field's struct tag.
 // If a required field is not set by the configuration file an error is returned.
 //
-//   type Config struct {
-//     Env string `fig:"env" validate:"required"` // or just `validate:"required"`
-//   }
+//	type Config struct {
+//	  Env string `fig:"env" validate:"required"` // or just `validate:"required"`
+//	}
 //
 // A field can be configured with a default value by adding a `default` key in the
 // field's struct tag.
 // If a field is not set by the configuration file then the default value is set.
 //
-//  type Config struct {
-//    Level string `fig:"level" default:"info"` // or just `default:"info"`
-//  }
+//	type Config struct {
+//	  Level string `fig:"level" default:"info"` // or just `default:"info"`
+//	}
 //
 // A single field may not be marked as both `required` and `default`.
 func Load(cfg interface{}, options ...Option) error {
