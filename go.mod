@@ -1,6 +1,6 @@
 module github.com/kkyr/fig
 
-go 1.16
+go 1.20
 
 require (
 	github.com/mitchellh/mapstructure v1.4.1

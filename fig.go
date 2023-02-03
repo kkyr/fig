@@ -180,6 +180,7 @@ func stringToRegexpHookFunc() mapstructure.DecodeHookFunc {
 		if t != reflect.TypeOf(&regexp.Regexp{}) {
 			return data, nil
 		}
+		//nolint:forcetypeassert
 		return regexp.Compile(data.(string))
 	}
 }
