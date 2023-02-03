@@ -94,7 +94,7 @@ type field struct {
 }
 
 // name is the name of the field. if the field contains an alt name
-// in the struct struct that name is used, else  it falls back to
+// in the struct that name is used, else  it falls back to
 // the field's name as defined in the struct.
 // if this field is a slice field, then its name is simply its
 // index in the slice.

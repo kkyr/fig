@@ -1212,7 +1212,5 @@ func Test_fig_setSlice(t *testing.T) {
 
 func setenv(t *testing.T, key, value string) {
 	t.Helper()
-	if err := os.Setenv(key, value); err != nil {
-		t.Fatalf("os.Setenv() unexpected error: %v", err)
-	}
+	t.Setenv(key, value)
 }

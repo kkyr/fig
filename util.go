@@ -8,12 +8,12 @@ import (
 )
 
 // stringSlice converts a Go slice represented as a string
-// into an an actual slice. The enclosing square brackets
+// into an actual slice. The enclosing square brackets
 // are not necessary.
 // fields should be separated by a comma.
 //
-//   "[1,2,3]"     --->   []string{"1", "2", "3"}
-//   " foo , bar"  --->   []string{" foo ", " bar"}
+//	"[1,2,3]"     --->   []string{"1", "2", "3"}
+//	" foo , bar"  --->   []string{" foo ", " bar"}
 func stringSlice(s string) []string {
 	s = strings.TrimSuffix(strings.TrimPrefix(s, "["), "]")
 	return strings.Split(s, ",")
