@@ -107,6 +107,10 @@ func (f *fig) Load(cfg interface{}) error {
 }
 
 func (f *fig) findCfgFile() (path string, err error) {
+	if fileExists(f.filename) {
+		return f.filename, nil
+	}
+
 	for _, dir := range f.dirs {
 		path = filepath.Join(dir, f.filename)
 		if fileExists(path) {
