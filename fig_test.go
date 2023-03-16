@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type Pod struct {
@@ -338,6 +340,38 @@ func Test_fig_Load_RequiredAndDefaults(t *testing.T) {
 			for _, field := range want {
 				if _, ok := fieldErrs[field]; !ok {
 					t.Errorf("want %s in fieldErrs, got %+v", field, fieldErrs)
+				}
+			}
+		})
+	}
+}
+
+func Test_fig_Load_UseStrict(t *testing.T) {
+	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
+		t.Run(f, func(t *testing.T) {
+			type Server struct {
+				Host string `fig:"host"`
+			}
+
+			var cfg Server
+			err := Load(&cfg, UseStrict(), File(f), Dirs(filepath.Join("testdata", "valid")))
+			if err == nil {
+				t.Fatalf("expected err")
+			}
+
+			want := []string{
+				"has invalid keys: logger",
+			}
+
+			fieldErrs := err.(*mapstructure.Error)
+
+			if len(want) != len(fieldErrs.Errors) {
+				t.Fatalf("\nlen(fieldErrs) != %d\ngot %+v\n", len(want), fieldErrs)
+			}
+
+			for i, err := range fieldErrs.Errors {
+				if !strings.Contains(err, want[i]) {
+					t.Errorf("want %s in fieldErrs, got %+v", want[i], err)
 				}
 			}
 		})
