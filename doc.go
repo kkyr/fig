@@ -160,6 +160,11 @@ Change the layout fig uses to parse times using `TimeLayout()`.
 
 By default fig parses time using the `RFC.3339` layout (`2006-01-02T15:04:05Z07:00`).
 
+# Strict Parsing
+
+By default fig ignores any fields in the config file that are not present in the struct. This behaviour can be changed using `UseStrict()` to achieve strict parsing.
+When strict parsing is enabled, extra fields in the config file will cause an error.
+
 Required
 
 A validate key with a required value in the field's struct tag makes fig check if the field has been set after it's been loaded. Required fields that are not set are returned as an error.

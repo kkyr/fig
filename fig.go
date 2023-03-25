@@ -76,6 +76,7 @@ type fig struct {
 	tag        string
 	timeLayout string
 	useEnv     bool
+	useStrict  bool
 	ignoreFile bool
 	envPrefix  string
 }
@@ -156,6 +157,7 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 		WeaklyTypedInput: true,
 		Result:           result,
 		TagName:          f.tag,
+		ErrorUnused:      f.useStrict,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToTimeHookFunc(f.timeLayout),

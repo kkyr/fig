@@ -105,3 +105,16 @@ func UseEnv(prefix string) Option {
 		f.envPrefix = prefix
 	}
 }
+
+// UseStrict returns an option that configures fig to return an error if
+// there exists additional fields in the config file that are not defined
+// in the config struct.
+//
+//	fig.Load(&cfg, fig.UseStrict())
+//
+// If this option is not used then fig ignores any additional fields in the config file.
+func UseStrict() Option {
+	return func(f *fig) {
+		f.useStrict = true
+	}
+}
