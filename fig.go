@@ -205,7 +205,7 @@ func namedEnvHookFunc(skip bool) mapstructure.DecodeHookFunc {
 		//nolint:forcetypeassert
 		dataValue := data.(string)
 
-		if !(strings.HasPrefix(dataValue, openToken) && strings.HasPrefix(dataValue, closeToken)) {
+		if !(strings.HasPrefix(dataValue, openToken) && strings.HasSuffix(dataValue, closeToken)) {
 			return data, nil
 		}
 
