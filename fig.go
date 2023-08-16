@@ -189,7 +189,8 @@ func stringToRegexpHookFunc() mapstructure.DecodeHookFunc {
 	}
 }
 
-// namedEnvHookFunc returns a DecodeHookFunc that returns value of env variable, named in config.
+// namedEnvHookFunc returns a DecodeHookFunc that returns value of env variable,
+// if variable name specified in config.
 func namedEnvHookFunc(skip bool) mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,

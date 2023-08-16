@@ -59,7 +59,7 @@ func Tag(tag string) Option {
 	}
 }
 
-// TimeLayout returns an option that conmfigures the time layout that fig uses when
+// TimeLayout returns an option that configures the time layout that fig uses when
 // parsing a time in a config file or in the default tag for time.Time fields.
 //
 //	fig.Load(&cfg, fig.TimeLayout("2006-01-02"))
@@ -71,6 +71,10 @@ func TimeLayout(layout string) Option {
 	}
 }
 
+// UseNamedEnv returns an option that configures fig to load values
+// from the environment for specified in config variable names
+//
+//	fig.Load(&cfg, fig.UseNamedEnv())
 func UseNamedEnv() Option {
 	return func(f *fig) {
 		f.useNamedEnv = true
