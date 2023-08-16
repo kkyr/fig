@@ -71,14 +71,15 @@ func defaultFig() *fig {
 }
 
 type fig struct {
-	filename   string
-	dirs       []string
-	tag        string
-	timeLayout string
-	useEnv     bool
-	useStrict  bool
-	ignoreFile bool
-	envPrefix  string
+	filename    string
+	dirs        []string
+	tag         string
+	timeLayout  string
+	useNamedEnv bool
+	useEnv      bool
+	useStrict   bool
+	ignoreFile  bool
+	envPrefix   string
 }
 
 func (f *fig) Load(cfg interface{}) error {
@@ -162,6 +163,7 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToTimeHookFunc(f.timeLayout),
 			stringToRegexpHookFunc(),
+			namedEnvHookFunc(!f.useNamedEnv),
 		),
 	})
 	if err != nil {
@@ -184,6 +186,31 @@ func stringToRegexpHookFunc() mapstructure.DecodeHookFunc {
 		}
 		//nolint:forcetypeassert
 		return regexp.Compile(data.(string))
+	}
+}
+
+// namedEnvHookFunc returns a DecodeHookFunc that returns value of env variable, named in config.
+func namedEnvHookFunc(skip bool) mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Type,
+		t reflect.Type,
+		data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String || skip {
+			return data, nil
+		}
+
+		openToken := "${"
+		closeToken := "}"
+
+		//nolint:forcetypeassert
+		dataValue := data.(string)
+
+		if !(strings.HasPrefix(dataValue, openToken) && strings.HasPrefix(dataValue, closeToken)) {
+			return data, nil
+		}
+
+		envName := strings.TrimSuffix(strings.TrimPrefix(dataValue, openToken), closeToken)
+		return os.Getenv(envName), nil
 	}
 }
 

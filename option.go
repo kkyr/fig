@@ -71,6 +71,12 @@ func TimeLayout(layout string) Option {
 	}
 }
 
+func UseNamedEnv() Option {
+	return func(f *fig) {
+		f.useNamedEnv = true
+	}
+}
+
 // UseEnv returns an option that configures fig to additionally load values
 // from the environment.
 //
