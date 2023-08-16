@@ -1,0 +1,5 @@
+winrm:
+  user: 'ci-robot'
+  pwd: '${CI_CONNECT_PWD}'
+
+lock_msg: 'is locked by CI'
