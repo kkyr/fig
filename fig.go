@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -137,12 +137,8 @@ func (f *fig) decodeFile(file string) (map[string]interface{}, error) {
 			return nil, err
 		}
 	case ".toml":
-		tree, err := toml.LoadReader(fd)
-		if err != nil {
+		if err := toml.NewDecoder(fd).Decode(&vals); err != nil {
 			return nil, err
-		}
-		for field, val := range tree.ToMap() {
-			vals[field] = val
 		}
 	default:
 		return nil, fmt.Errorf("unsupported file extension %s", filepath.Ext(f.filename))
