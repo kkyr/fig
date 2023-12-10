@@ -257,9 +257,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 					Application struct {
 						BuildDate time.Time `fig:"build_date" default:"2020-01-01T12:00:00Z"`
 					}
-					Server struct {
-						Listener ListenerType `fig:"listener_type" default:"unix"`
-					}
+					Listener ListenerType `fig:"listener_type" default:"unix"`
 				}
 
 				var want Server
@@ -270,7 +268,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 				want.Logger.Production = false
 				want.Logger.Metadata.Keys = []string{"ts"}
 				want.Application.BuildDate = time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC)
-				want.Server.Listener = ListenerTCP
+				want.Listener = ListenerTCP
 
 				var cfg Server
 				err := Load(&cfg, File(f), Dirs(filepath.Join("testdata", "valid")))
