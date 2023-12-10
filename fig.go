@@ -313,11 +313,22 @@ func (f *fig) formatEnvKey(key string) string {
 	return strings.ToUpper(key)
 }
 
-// setDefaultValue calls setValue but disallows booleans from
-// being set.
+// setDefaultValue calls setValue unless the value satisfies the
+// StringUnmarshaler interface or is of a boolean type.
 func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
 	if fv.Kind() == reflect.Bool {
 		return fmt.Errorf("unsupported type: %v", fv.Kind())
+	}
+	if reflect.PointerTo(fv.Type()).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
+		vi := reflect.New(fv.Type()).Interface()
+		if unmarshaler, ok := vi.(StringUnmarshaler); ok {
+			err := unmarshaler.UnmarshalString(val)
+			if err != nil {
+				return err
+			}
+			fv.Set(reflect.ValueOf(vi).Elem())
+		}
+		return nil
 	}
 	return f.setValue(fv, val)
 }
