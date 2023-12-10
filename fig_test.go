@@ -126,6 +126,9 @@ func validPodConfig() Pod {
 				"-w": {
 					Value: "true",
 				},
+				"--mem": {
+					Value: "low",
+				},
 			},
 		},
 	}

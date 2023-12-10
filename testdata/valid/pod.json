@@ -43,6 +43,9 @@
 				"args": {
 					"-w": {
 						"value": "true"
+					},
+					"--mem": {
+						"value": "low"
 					}
 				}
 			}

@@ -26,6 +26,8 @@ spec:
       args:
         "-w":
           value: "true"
+        "--mem":
+          value: "low"
   volumes:
     - name: data
     - name: config

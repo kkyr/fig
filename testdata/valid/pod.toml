@@ -36,6 +36,7 @@ master = true
 
     [spec.containers.args]
     "-w" = { value = "true" }
+    "--mem" = { value = "low" }
 
   [[spec.volumes]]
   name = "data"
