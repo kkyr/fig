@@ -375,7 +375,8 @@ func Test_fig_Load_UseStrict(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {
 			type Server struct {
-				Host string `fig:"host"`
+				Host     string       `fig:"host"`
+				Listener ListenerType `fig:"listener_type"`
 			}
 
 			var cfg Server
