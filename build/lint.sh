@@ -6,7 +6,7 @@ export CGO_ENABLED=1
 
 if ! command -v golangci-lint &> /dev/null; then
   echo "Installing golangci-lint"
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.51.0
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 fi
 
 echo -n "Running golangci-lint: "

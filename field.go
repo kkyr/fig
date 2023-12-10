@@ -48,6 +48,13 @@ func flattenField(f *field, fs *[]*field, tagKey string) {
 				flattenField(child, fs, tagKey)
 			}
 		}
+
+	case reflect.Map:
+		for _, key := range f.v.MapKeys() {
+			child := newMapField(f, key, tagKey)
+			*fs = append(*fs, child)
+			flattenField(child, fs, tagKey)
+		}
 	}
 }
 
@@ -60,7 +67,7 @@ func newStructField(parent *field, idx int, tagKey string) *field {
 		v:        parent.v.Field(idx),
 		t:        parent.v.Field(idx).Type(),
 		st:       parent.t.Field(idx),
-		sliceIdx: -1,
+		sliceIdx: -1, // not applicable for struct fields
 	}
 	f.structTag = parseTag(f.st.Tag, tagKey)
 	return f
@@ -81,14 +88,32 @@ func newSliceField(parent *field, idx int, tagKey string) *field {
 	return f
 }
 
+// newMapField is a constructor for a field that is a map entry.
+// key is the key of the map entry, and tagKey is the key of the
+// tag that contains the field alt name (if any).
+func newMapField(parent *field, key reflect.Value, tagKey string) *field {
+	f := &field{
+		parent:   parent,
+		v:        parent.v.MapIndex(key),
+		t:        parent.v.MapIndex(key).Type(),
+		st:       parent.st,
+		sliceIdx: -1, // not applicable for map entries
+		mapKey:   &key,
+	}
+	f.structTag = parseTag(f.st.Tag, tagKey)
+	return f
+}
+
 // field is a settable field of a config object.
 type field struct {
 	parent *field
 
-	v        reflect.Value
-	t        reflect.Type
-	st       reflect.StructField
-	sliceIdx int // >=0 if this field is a member of a slice.
+	v  reflect.Value
+	t  reflect.Type
+	st reflect.StructField
+
+	sliceIdx int            // >=0 if this field is a member of a slice.
+	mapKey   *reflect.Value // key of the map entry if this field is a map entry, nil otherwise.
 
 	structTag
 }
@@ -101,6 +126,9 @@ type field struct {
 func (f *field) name() string {
 	if f.sliceIdx >= 0 {
 		return fmt.Sprintf("[%d]", f.sliceIdx)
+	}
+	if f.mapKey != nil {
+		return fmt.Sprintf("[%s]", f.mapKey.String())
 	}
 	if f.altName != "" {
 		return f.altName
@@ -120,7 +148,7 @@ func (f *field) path() (path string) {
 		path += f.name()
 		// if it's a slice/array we don't want a dot before the slice indexer
 		// e.g. we want A[0].B instead of A.[0].B
-		if f.t.Kind() != reflect.Slice && f.t.Kind() != reflect.Array {
+		if f.t.Kind() != reflect.Slice && f.t.Kind() != reflect.Array && f.t.Kind() != reflect.Map {
 			path += "."
 		}
 	}

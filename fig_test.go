@@ -32,12 +32,17 @@ type Spec struct {
 	Volumes    []*Volume   `fig:"volumes"`
 }
 
+type Arg struct {
+	Value string `fig:"value" validate:"required"`
+}
+
 type Container struct {
-	Name      string   `fig:"name" validate:"required"`
-	Image     string   `fig:"image" validate:"required"`
-	Command   []string `fig:"command"`
-	Env       []Env    `fig:"env"`
-	Ports     []Port   `fig:"ports"`
+	Name      string         `fig:"name" validate:"required"`
+	Image     string         `fig:"image" validate:"required"`
+	Command   []string       `fig:"command"`
+	Env       []Env          `fig:"env"`
+	Ports     []Port         `fig:"ports"`
+	Args      map[string]Arg `fig:"args" validate:"required"`
 	Resources struct {
 		Limits struct {
 			CPU string `fig:"cpu"`
@@ -115,6 +120,14 @@ func validPodConfig() Pod {
 				{
 					MountPath: "/redis-master",
 					Name:      "config",
+				},
+			},
+			Args: map[string]Arg{
+				"-w": {
+					Value: "true",
+				},
+				"--mem": {
+					Value: "low",
 				},
 			},
 		},
@@ -197,6 +210,8 @@ func Test_fig_Load_Required(t *testing.T) {
 				"kind",
 				"metadata.master",
 				"spec.containers[0].image",
+				"spec.containers[0].args[-w].value",
+				"spec.containers[0].args[-o].value",
 				"spec.volumes[0].configMap.items",
 				"spec.volumes[1].name",
 			}

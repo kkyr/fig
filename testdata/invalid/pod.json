@@ -36,7 +36,14 @@
 						"mountPath": "/redis-master",
 						"name": "config"
 					}
-				]
+				],
+				"args": {
+					"-w": {
+						"value": ""
+					},
+					"-o": {
+					}
+				}
 			}
 		],
 		"volumes": [
