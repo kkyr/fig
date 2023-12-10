@@ -28,6 +28,42 @@ const (
 	DefaultTimeLayout = time.RFC3339
 )
 
+// StringUnmarshaler is an interface for custom unmarshaling of strings
+//
+// If a field with a local type asignment satisfies this interface, it allows the user
+// to implment their own custom type unmarshaling method.
+//
+// Example:
+//
+//	type ListenerType uint
+//
+//	const (
+//	  ListenerUnix ListenerType = iota
+//	  ListenerTCP
+//	  ListenerTLS
+//	)
+//
+//	type Config struct {
+//	  Listener ListenerType `fig:"listener_type" default:"unix"`
+//	}
+//
+//	func (l *ListenerType) UnmarshalType(v string) error {
+//		   switch strings.ToLower(v) {
+//		   case "unix":
+//		     *l = ListenerUnix
+//		   case "tcp":
+//		     *l = ListenerTCP
+//		   case "tls":
+//		     *l = ListenerTLS
+//		   default:
+//	      return fmt.Errorf("unknown listener type: %s", v)
+//	    }
+//	    return nil
+//	 }
+type StringUnmarshaler interface {
+	UnmarshalString(s string) error
+}
+
 // Load reads a configuration file and loads it into the given struct. The
 // parameter `cfg` must be a pointer to a struct.
 //
@@ -158,6 +194,7 @@ func (f *fig) decodeMap(m map[string]interface{}, result interface{}) error {
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToTimeHookFunc(f.timeLayout),
 			stringToRegexpHookFunc(),
+			stringToStringUnmarshalerHook(),
 		),
 	})
 	if err != nil {
@@ -180,6 +217,36 @@ func stringToRegexpHookFunc() mapstructure.DecodeHookFunc {
 		}
 		//nolint:forcetypeassert
 		return regexp.Compile(data.(string))
+	}
+}
+
+// stringToStringUnmarshalerHook returns a DecodeHookFunc that executes a custom method which
+// satisfies the StringUnmarshaler interface on custom types.
+func stringToStringUnmarshalerHook() mapstructure.DecodeHookFunc {
+	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if f.Kind() != reflect.String {
+			return data, nil
+		}
+
+		ds, ok := data.(string)
+		if !ok {
+			return data, nil
+		}
+
+		if reflect.PointerTo(t).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
+			val := reflect.New(t).Interface()
+
+			if unmarshaler, ok := val.(StringUnmarshaler); ok {
+				err := unmarshaler.UnmarshalString(ds)
+				if err != nil {
+					return nil, err
+				}
+
+				return reflect.ValueOf(val).Elem().Interface(), nil
+			}
+		}
+
+		return data, nil
 	}
 }
 

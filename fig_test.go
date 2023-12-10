@@ -84,6 +84,14 @@ type Item struct {
 	Path string `fig:"path" validate:"required"`
 }
 
+type ListenerType uint
+
+const (
+	ListenerUnix ListenerType = iota
+	ListenerTCP
+	ListenerTLS
+)
+
 func validPodConfig() Pod {
 	var pod Pod
 
@@ -249,6 +257,9 @@ func Test_fig_Load_Defaults(t *testing.T) {
 					Application struct {
 						BuildDate time.Time `fig:"build_date" default:"2020-01-01T12:00:00Z"`
 					}
+					Server struct {
+						Listener ListenerType `fig:"listener_type" default:"unix"`
+					}
 				}
 
 				var want Server
@@ -259,6 +270,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 				want.Logger.Production = false
 				want.Logger.Metadata.Keys = []string{"ts"}
 				want.Application.BuildDate = time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC)
+				want.Server.Listener = ListenerTCP
 
 				var cfg Server
 				err := Load(&cfg, File(f), Dirs(filepath.Join("testdata", "valid")))
@@ -590,8 +602,9 @@ func Test_fig_decodeMap(t *testing.T) {
 		"log_level": "debug",
 		"severity":  "5",
 		"server": map[string]interface{}{
-			"ports":  []int{443, 80},
-			"secure": 1,
+			"ports":         []int{443, 80},
+			"secure":        1,
+			"listener_type": "tls",
 		},
 	}
 
@@ -599,8 +612,9 @@ func Test_fig_decodeMap(t *testing.T) {
 		Level    string `fig:"log_level"`
 		Severity int    `fig:"severity" validate:"required"`
 		Server   struct {
-			Ports  []string `fig:"ports" default:"[443]"`
-			Secure bool
+			Ports    []string `fig:"ports" default:"[443]"`
+			Secure   bool
+			Listener ListenerType `fig:"listener_type" default:"unix"`
 		} `fig:"server"`
 	}
 
@@ -622,6 +636,10 @@ func Test_fig_decodeMap(t *testing.T) {
 
 	if cfg.Server.Secure == false {
 		t.Error("cfg.Server.Secure == false")
+	}
+
+	if cfg.Server.Listener != ListenerTLS {
+		t.Errorf("cfg.Server.Listener: want: %s, got: %s", ListenerTLS, cfg.Server.Listener)
 	}
 }
 
@@ -1262,4 +1280,31 @@ func Test_fig_setSlice(t *testing.T) {
 func setenv(t *testing.T, key, value string) {
 	t.Helper()
 	t.Setenv(key, value)
+}
+
+func (l *ListenerType) UnmarshalString(v string) error {
+	switch strings.ToLower(v) {
+	case "unix":
+		*l = ListenerUnix
+	case "tcp":
+		*l = ListenerTCP
+	case "tls":
+		*l = ListenerTLS
+	default:
+		return fmt.Errorf("unknown listener type: %s", v)
+	}
+	return nil
+}
+
+func (l ListenerType) String() string {
+	switch l {
+	case ListenerUnix:
+		return "unix"
+	case ListenerTCP:
+		return "tcp"
+	case ListenerTLS:
+		return "tls"
+	default:
+		return "unknown"
+	}
 }
