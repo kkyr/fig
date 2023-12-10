@@ -44,6 +44,27 @@ func Test_flattenCfg(t *testing.T) {
 	checkField(t, fields[9], "k", "J.k")
 }
 
+func Test_flattenCfg_Map(t *testing.T) {
+	type A struct {
+		B string `fig:"b"`
+	}
+
+	cfg := struct {
+		D map[string]A
+	}{}
+	cfg.D = map[string]A{
+		"key1": {B: "b"},
+	}
+
+	fields := flattenCfg(&cfg, "fig")
+	if len(fields) != 3 {
+		t.Fatalf("len(fields) == %d, expected %d", len(fields), 3)
+	}
+	checkField(t, fields[0], "D", "D")
+	checkField(t, fields[1], "[key1]", "D[key1]")
+	checkField(t, fields[2], "b", "D[key1].b")
+}
+
 func Test_newStructField(t *testing.T) {
 	cfg := struct {
 		A int `fig:"a" default:"5" validate:"required"`

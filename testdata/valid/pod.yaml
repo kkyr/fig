@@ -23,6 +23,9 @@ spec:
           name: data
         - mountPath: /redis-master
           name: config
+      args:
+        "-w":
+          value: "true"
   volumes:
     - name: data
     - name: config

@@ -34,6 +34,9 @@ master = true
     mountPath = "/redis-master"
     name = "config"
 
+    [spec.containers.args]
+    "-w" = { value = "true" }
+
   [[spec.volumes]]
   name = "data"
 

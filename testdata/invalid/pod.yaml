@@ -20,6 +20,11 @@ spec:
           name: data
         - mountPath: /redis-master
           name: config
+      args:
+        "-w":
+          value: ""
+        "-o":
+          value:
   volumes:
     - name: data
       configMap:
