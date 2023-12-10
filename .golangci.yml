@@ -19,6 +19,8 @@ linters:
     - nlreturn
     - errname
     - nonamedreturns
+    - tagalign
+    - depguard
 
 issues:
   exclude-rules:
