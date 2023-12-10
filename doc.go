@@ -144,6 +144,10 @@ With the config above individual servers may be configured with the following en
 
 Note: the Server slice must already have members inside it (i.e. from loading of the configuration file) for the containing fields to be altered via the environment. Fig will not instantiate and insert elements into the slice.
 
+## Limitations
+
+Maps and map values cannot be populated from the environment.
+
 # Time
 
 Change the layout fig uses to parse times using `TimeLayout()`.
@@ -246,12 +250,16 @@ Successive elements of slice defaults should be separated by a comma. The entire
 ## Limitations:
 
  1. Boolean values:
-    The parser cannot distinguish between false and an unset value for boolean types.
-    As a result, default values for booleans are not supported.
+    Fig cannot distinguish between false and an unset value for boolean types.
+    As a result, default values for booleans are not currently supported.
 
- 2. Map values:
+ 2. Maps:
+    Maps are not supported because providing a map in a string form would be complex and error-prone.
+    Users are encouraged to use structs instead for more reliable and structured data handling.
+
+ 3. Map values:
     Values retrieved from a map through reflection are not addressable.
-    Therefore, setting default values for map values is not possible.
+    Therefore, setting default values for map values is not currently supported.
 
 # Mutual exclusion
 
