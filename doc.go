@@ -144,7 +144,7 @@ With the config above individual servers may be configured with the following en
 
 Note: the Server slice must already have members inside it (i.e. from loading of the configuration file) for the containing fields to be altered via the environment. Fig will not instantiate and insert elements into the slice.
 
-## Limitations
+# Environment Limitations
 
 Maps and map values cannot be populated from the environment.
 
@@ -247,7 +247,7 @@ Successive elements of slice defaults should be separated by a comma. The entire
 	  Durations []time.Duration `default:"[30m,1h,90m,2h]"` // or `default:"30m,1h,90m,2h"`
 	}
 
-## Limitations:
+# Defaults Limitations
 
  1. Boolean values:
     Fig cannot distinguish between false and an unset value for boolean types.
