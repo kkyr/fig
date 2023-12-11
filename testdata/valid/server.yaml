@@ -1,5 +1,4 @@
 host: "0.0.0.0"
-listener_type: "tcp"
 
 logger:
   log_level: "debug"
