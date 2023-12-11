@@ -92,6 +92,20 @@ const (
 	ListenerTLS
 )
 
+func (l *ListenerType) UnmarshalString(v string) error {
+	switch strings.ToLower(v) {
+	case "unix":
+		*l = ListenerUnix
+	case "tcp":
+		*l = ListenerTCP
+	case "tls":
+		*l = ListenerTLS
+	default:
+		return fmt.Errorf("unknown listener type: %s", v)
+	}
+	return nil
+}
+
 func validPodConfig() Pod {
 	var pod Pod
 
@@ -268,7 +282,7 @@ func Test_fig_Load_Defaults(t *testing.T) {
 				want.Logger.Production = false
 				want.Logger.Metadata.Keys = []string{"ts"}
 				want.Application.BuildDate = time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC)
-				want.Listener = ListenerTCP
+				want.Listener = ListenerUnix
 
 				var cfg Server
 				err := Load(&cfg, File(f), Dirs(filepath.Join("testdata", "valid")))
@@ -375,8 +389,7 @@ func Test_fig_Load_UseStrict(t *testing.T) {
 	for _, f := range []string{"server.yaml", "server.json", "server.toml"} {
 		t.Run(f, func(t *testing.T) {
 			type Server struct {
-				Host     string       `fig:"host"`
-				Listener ListenerType `fig:"listener_type"`
+				Host string `fig:"host"`
 			}
 
 			var cfg Server
@@ -638,7 +651,7 @@ func Test_fig_decodeMap(t *testing.T) {
 	}
 
 	if cfg.Server.Listener != ListenerTLS {
-		t.Errorf("cfg.Server.Listener: want: %s, got: %s", ListenerTLS, cfg.Server.Listener)
+		t.Errorf("cfg.Server.Listener: want: %d, got: %d", ListenerTLS, cfg.Server.Listener)
 	}
 }
 
@@ -1279,31 +1292,4 @@ func Test_fig_setSlice(t *testing.T) {
 func setenv(t *testing.T, key, value string) {
 	t.Helper()
 	t.Setenv(key, value)
-}
-
-func (l *ListenerType) UnmarshalString(v string) error {
-	switch strings.ToLower(v) {
-	case "unix":
-		*l = ListenerUnix
-	case "tcp":
-		*l = ListenerTCP
-	case "tls":
-		*l = ListenerTLS
-	default:
-		return fmt.Errorf("unknown listener type: %s", v)
-	}
-	return nil
-}
-
-func (l ListenerType) String() string {
-	switch l {
-	case ListenerUnix:
-		return "unix"
-	case ListenerTCP:
-		return "tcp"
-	case ListenerTLS:
-		return "tls"
-	default:
-		return "unknown"
-	}
 }
