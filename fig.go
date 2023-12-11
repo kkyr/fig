@@ -313,12 +313,22 @@ func (f *fig) formatEnvKey(key string) string {
 	return strings.ToUpper(key)
 }
 
-// setDefaultValue calls setValue unless the value satisfies the
-// StringUnmarshaler interface or is of a boolean type.
+// setDefaultValue calls setValue but disallows booleans from
+// being set.
 func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
 	if fv.Kind() == reflect.Bool {
 		return fmt.Errorf("unsupported type: %v", fv.Kind())
 	}
+	return f.setValue(fv, val)
+}
+
+// setValue sets fv to val. it attempts to convert val to the correct
+// type based on the field's kind. if conversion fails an error is
+// returned. If fv satisfies the StringUnmarshaler interface it will
+// execute the corresponding StringUnmarshaler.UnmarshalString method
+// on the value.
+// fv must be settable else this panics.
+func (f *fig) setValue(fv reflect.Value, val string) error {
 	if reflect.PointerTo(fv.Type()).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
 		vi := reflect.New(fv.Type()).Interface()
 		if unmarshaler, ok := vi.(StringUnmarshaler); ok {
@@ -330,14 +340,7 @@ func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
 		}
 		return nil
 	}
-	return f.setValue(fv, val)
-}
 
-// setValue sets fv to val. it attempts to convert val to the correct
-// type based on the field's kind. if conversion fails an error is
-// returned.
-// fv must be settable else this panics.
-func (f *fig) setValue(fv reflect.Value, val string) error {
 	switch fv.Kind() {
 	case reflect.Ptr:
 		if fv.IsNil() {
