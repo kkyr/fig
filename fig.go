@@ -329,12 +329,12 @@ func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
 // on the value.
 // fv must be settable else this panics.
 func (f *fig) setValue(fv reflect.Value, val string) error {
-	if reflect.PointerTo(fv.Type()).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
+	if fv.IsValid() && reflect.PointerTo(fv.Type()).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
 		vi := reflect.New(fv.Type()).Interface()
 		if unmarshaler, ok := vi.(StringUnmarshaler); ok {
 			err := unmarshaler.UnmarshalString(val)
 			if err != nil {
-				return err
+				return fmt.Errorf("could not unmarshal string %q: %w", val, err)
 			}
 			fv.Set(reflect.ValueOf(vi).Elem())
 		}
