@@ -34,6 +34,10 @@ const (
 // method for unmarshaling from a string. This is particularly useful for handling
 // different string representations that need to be converted into a specific type.
 //
+// To use this, the custom type must implement this interface and a corresponding
+// string value should be provided in the configuration. Fig automatically detects
+// this and handles the rest.
+//
 // Example usage:
 //
 //	type ListenerType uint
