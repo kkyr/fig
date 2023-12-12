@@ -329,17 +329,10 @@ func (f *fig) setDefaultValue(fv reflect.Value, val string) error {
 // on the value.
 // fv must be settable else this panics.
 func (f *fig) setValue(fv reflect.Value, val string) error {
-	if fv.IsValid() && reflect.PointerTo(fv.Type()).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
-		vi := reflect.New(fv.Type()).Interface()
-		if unmarshaler, ok := vi.(StringUnmarshaler); ok {
-			err := unmarshaler.UnmarshalString(val)
-			if err != nil {
-				return fmt.Errorf("could not unmarshal string %q: %w", val, err)
-			}
-			fv.Set(reflect.ValueOf(vi).Elem())
-			return nil
-		}
-		return fmt.Errorf("unexpected error while trying to unmarshal string")
+	if ok, err := trySetFromStringUnmarshaler(fv, val); err != nil {
+		return err
+	} else if ok {
+		return nil
 	}
 
 	switch fv.Kind() {
@@ -422,4 +415,28 @@ func (f *fig) setSlice(sv reflect.Value, val string) error {
 	}
 	sv.Set(slice)
 	return nil
+}
+
+// trySetFromStringUnmarshaler takes a value fv which is expected to implement the
+// StringUnmarshaler interface and attempts to unmarshal the string val into the field.
+// If the value does not implement the interface, or an error occurs during the unmarshal,
+// then false and an error (if applicable) is returned. Otherwise, true and a nil error
+// is returned.
+func trySetFromStringUnmarshaler(fv reflect.Value, val string) (bool, error) {
+	if fv.IsValid() && reflect.PointerTo(fv.Type()).Implements(reflect.TypeOf((*StringUnmarshaler)(nil)).Elem()) {
+		vi := reflect.New(fv.Type()).Interface()
+		if unmarshaler, ok := vi.(StringUnmarshaler); ok {
+			err := unmarshaler.UnmarshalString(val)
+			if err != nil {
+				return false, fmt.Errorf("could not unmarshal string %q: %w", val, err)
+			}
+
+			fv.Set(reflect.ValueOf(vi).Elem())
+			return true, nil
+		}
+
+		return false, fmt.Errorf("unable to type assert StringUnmarshaler from type %s", fv.Type().Name())
+	}
+
+	return false, nil
 }
