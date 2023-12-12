@@ -19,7 +19,7 @@ fig is a tiny library for loading an application's configuration into a Go struc
 - 🛠️ Define your **configuration**, **validations** and **defaults** all within a single struct.
 - 🌍 Easily load your configuration from a **file**, the **environment**, or both.
 - ⏰ Decode strings into `Time`, `Duration`, `Regexp`, or any custom type that satisfies the `StringUnmarshaler` interface.
-- 🗂️ Compatible with `yaml`, `.json`, and `.toml` file formats.
+- 🗂️ Compatible with `yaml`, `json`, and `toml` file formats.
 - 🧩 Only three external dependencies.
 
 ## Getting Started
@@ -97,7 +97,7 @@ See usage [examples](/examples).
 
 ## Documentation
 
-For details documentation, check [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc).
+For detailed documentation, visit [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc).
 
 ## Contributing
 
