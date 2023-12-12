@@ -337,8 +337,9 @@ func (f *fig) setValue(fv reflect.Value, val string) error {
 				return fmt.Errorf("could not unmarshal string %q: %w", val, err)
 			}
 			fv.Set(reflect.ValueOf(vi).Elem())
+			return nil
 		}
-		return nil
+		return fmt.Errorf("unexpected error while trying to unmarshal string")
 	}
 
 	switch fv.Kind() {
