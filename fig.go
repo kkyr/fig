@@ -28,12 +28,13 @@ const (
 	DefaultTimeLayout = time.RFC3339
 )
 
-// StringUnmarshaler is an interface for custom unmarshaling of strings
+// StringUnmarshaler is an interface designed for custom string unmarshaling.
 //
-// If a field with a local type asignment satisfies this interface, it allows the user
-// to implement their own custom type unmarshaling method.
+// This interface is used when a field of a custom type needs to define its own
+// method for unmarshaling from a string. This is particularly useful for handling
+// different string representations that need to be converted into a specific type.
 //
-// Example:
+// Example usage:
 //
 //	type ListenerType uint
 //
@@ -42,10 +43,6 @@ const (
 //		ListenerTCP
 //		ListenerTLS
 //	)
-//
-//	type Config struct {
-//		Listener ListenerType `fig:"listener_type" default:"unix"`
-//	}
 //
 //	func (l *ListenerType) UnmarshalType(v string) error {
 //		switch strings.ToLower(v) {
@@ -59,6 +56,10 @@ const (
 //			return fmt.Errorf("unknown listener type: %s", v)
 //		}
 //		return nil
+//	}
+//
+//	type Config struct {
+//		Listener ListenerType `fig:"listener_type" default:"tcp"`
 //	}
 type StringUnmarshaler interface {
 	UnmarshalString(s string) error
