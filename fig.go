@@ -35,31 +35,32 @@ const (
 //
 // Example:
 //
-//	type ListenerType uint
+// type ListenerType uint
+
+// const (
+// 	ListenerUnix ListenerType = iota
+// 	ListenerTCP
+// 	ListenerTLS
+// )
 //
-//	const (
-//	  ListenerUnix ListenerType = iota
-//	  ListenerTCP
-//	  ListenerTLS
-//	)
+// type Config struct {
+// 	Listener ListenerType `fig:"listener_type" default:"unix"`
+// }
 //
-//	type Config struct {
-//	  Listener ListenerType `fig:"listener_type" default:"unix"`
-//	}
+// func (l *ListenerType) UnmarshalType(v string) error {
+// 	switch strings.ToLower(v) {
+// 	case "unix":
+// 		*l = ListenerUnix
+// 	case "tcp":
+// 		*l = ListenerTCP
+// 	case "tls":
+// 		*l = ListenerTLS
+// 	default:
+// 		return fmt.Errorf("unknown listener type: %s", v)
+// 	}
+// 	return nil
+// }
 //
-//	func (l *ListenerType) UnmarshalType(v string) error {
-//		   switch strings.ToLower(v) {
-//		   case "unix":
-//		     *l = ListenerUnix
-//		   case "tcp":
-//		     *l = ListenerTCP
-//		   case "tls":
-//		     *l = ListenerTLS
-//		   default:
-//	      return fmt.Errorf("unknown listener type: %s", v)
-//	    }
-//	    return nil
-//	 }
 type StringUnmarshaler interface {
 	UnmarshalString(s string) error
 }
