@@ -1,0 +1,7 @@
+app:
+  environment: dev
+
+server:
+  port: 443
+  read_timeout: 1m
+
