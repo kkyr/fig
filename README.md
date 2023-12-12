@@ -79,7 +79,6 @@ func main() {
 ```
 
 Fields marked as _required_ are checked to ensure they're not empty, and _default_ values are applied to fill in those that are empty.
-```
 
 ## Environment
 
