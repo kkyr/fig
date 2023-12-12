@@ -12,16 +12,15 @@
 
 # fig
 
-fig is a tiny library for loading an application's config file and its environment into a Go struct. Individual fields can have default values defined or be marked as required.
+fig is a tiny library for loading an application's configuration into a Go struct.
 
 ## Why fig?
 
-- Define your **configuration**, **validations** and **defaults** in a single location
-- Optionally **load from the environment** as well
-- Only **3** external dependencies
-- Full support for`time.Time`, `time.Duration` & `regexp.Regexp`
-- Tiny API
-- Decoders for `.yaml`, `.json` and `.toml` files
+- 🛠️ Define your **configuration**, **validations** and **defaults** all within a single struct.
+- 🌍 Easily load your configuration from a **file**, the **environment**, or both.
+- ⏰ Decode strings into `Time`, `Duration`, `Regexp`, or any custom type that satisfies the `StringUnmarshaler` interface.
+- 🗂️ Compatible with `yaml`, `json`, and `toml` file formats.
+- 🧩 Only three external dependencies.
 
 ## Getting Started
 
@@ -72,32 +71,24 @@ type Config struct {
 func main() {
   var cfg Config
   err := fig.Load(&cfg)
-  // handle your err
+  // error handling omitted
   
   fmt.Printf("%+v\n", cfg)
-  // Output: {Build:2019-12-25 00:00:00 +0000 UTC Server:{Host:127.0.0.1 Ports:[8080] Cleanup:1h0m0s} Logger:{Level:warn Pattern:.* Trace:true}}
+  // {Build:2019-12-25T00:00:00Z Server:{Host:127.0.0.1 Ports:[8080] Cleanup:1h0m0s} Logger:{Level:warn Pattern:.* Trace:true}}
 }
 ```
 
-If a field is not set and is marked as *required* then an error is returned. If a *default* value is defined instead then that value is used to populate the field.
-
-Fig searches for a file named `config.yaml` in the directory it is run from. Change the lookup behaviour by passing additional parameters to `Load()`:
-
-```go
-fig.Load(&cfg,
-  fig.File("settings.json"),
-  fig.Dirs(".", "/etc/myapp", "/home/user/myapp"),
-) // searches for ./settings.json, /etc/myapp/settings.json, /home/user/myapp/settings.json
-
-```
+Fields marked as _required_ are checked to ensure they're not empty, and _default_ values are applied to fill in those that are empty.
 
 ## Environment
 
-Need to additionally fill fields from the environment? It's as simple as:
+By default, fig will only look for values in a config file. To also include values from the environment, use the `UseEnv` option:
 
 ```go
-fig.Load(&cfg, fig.UseEnv("MYAPP"))
+fig.Load(&cfg, fig.UseEnv("APP_PREFIX"))
 ```
+
+In case of conflicts, values from the environment take precedence.
 
 ## Usage
 
@@ -105,7 +96,7 @@ See usage [examples](/examples).
 
 ## Documentation
 
-See [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc) for detailed documentation.
+For detailed documentation, visit [go.dev](https://pkg.go.dev/github.com/kkyr/fig?tab=doc).
 
 ## Contributing
 

@@ -28,38 +28,43 @@ const (
 	DefaultTimeLayout = time.RFC3339
 )
 
-// StringUnmarshaler is an interface for custom unmarshaling of strings
+// StringUnmarshaler is an interface designed for custom string unmarshaling.
 //
-// If a field with a local type asignment satisfies this interface, it allows the user
-// to implment their own custom type unmarshaling method.
+// This interface is used when a field of a custom type needs to define its own
+// method for unmarshaling from a string. This is particularly useful for handling
+// different string representations that need to be converted into a specific type.
 //
-// Example:
+// To use this, the custom type must implement this interface and a corresponding
+// string value should be provided in the configuration. Fig automatically detects
+// this and handles the rest.
+//
+// Example usage:
 //
 //	type ListenerType uint
 //
 //	const (
-//	  ListenerUnix ListenerType = iota
-//	  ListenerTCP
-//	  ListenerTLS
+//		ListenerUnix ListenerType = iota
+//		ListenerTCP
+//		ListenerTLS
 //	)
 //
-//	type Config struct {
-//	  Listener ListenerType `fig:"listener_type" default:"unix"`
+//	func (l *ListenerType) UnmarshalType(v string) error {
+//		switch strings.ToLower(v) {
+//		case "unix":
+//			*l = ListenerUnix
+//		case "tcp":
+//			*l = ListenerTCP
+//		case "tls":
+//			*l = ListenerTLS
+//		default:
+//			return fmt.Errorf("unknown listener type: %s", v)
+//		}
+//		return nil
 //	}
 //
-//	func (l *ListenerType) UnmarshalType(v string) error {
-//		   switch strings.ToLower(v) {
-//		   case "unix":
-//		     *l = ListenerUnix
-//		   case "tcp":
-//		     *l = ListenerTCP
-//		   case "tls":
-//		     *l = ListenerTLS
-//		   default:
-//	      return fmt.Errorf("unknown listener type: %s", v)
-//	    }
-//	    return nil
-//	 }
+//	type Config struct {
+//		Listener ListenerType `fig:"listener_type" default:"tcp"`
+//	}
 type StringUnmarshaler interface {
 	UnmarshalString(s string) error
 }
