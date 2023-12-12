@@ -31,36 +31,35 @@ const (
 // StringUnmarshaler is an interface for custom unmarshaling of strings
 //
 // If a field with a local type asignment satisfies this interface, it allows the user
-// to implment their own custom type unmarshaling method.
+// to implement their own custom type unmarshaling method.
 //
 // Example:
 //
-// type ListenerType uint
-
-// const (
-// 	ListenerUnix ListenerType = iota
-// 	ListenerTCP
-// 	ListenerTLS
-// )
+//	type ListenerType uint
 //
-// type Config struct {
-// 	Listener ListenerType `fig:"listener_type" default:"unix"`
-// }
+//	const (
+//		ListenerUnix ListenerType = iota
+//		ListenerTCP
+//		ListenerTLS
+//	)
 //
-// func (l *ListenerType) UnmarshalType(v string) error {
-// 	switch strings.ToLower(v) {
-// 	case "unix":
-// 		*l = ListenerUnix
-// 	case "tcp":
-// 		*l = ListenerTCP
-// 	case "tls":
-// 		*l = ListenerTLS
-// 	default:
-// 		return fmt.Errorf("unknown listener type: %s", v)
-// 	}
-// 	return nil
-// }
+//	type Config struct {
+//		Listener ListenerType `fig:"listener_type" default:"unix"`
+//	}
 //
+//	func (l *ListenerType) UnmarshalType(v string) error {
+//		switch strings.ToLower(v) {
+//		case "unix":
+//			*l = ListenerUnix
+//		case "tcp":
+//			*l = ListenerTCP
+//		case "tls":
+//			*l = ListenerTLS
+//		default:
+//			return fmt.Errorf("unknown listener type: %s", v)
+//		}
+//		return nil
+//	}
 type StringUnmarshaler interface {
 	UnmarshalString(s string) error
 }
