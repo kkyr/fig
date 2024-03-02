@@ -118,3 +118,16 @@ func UseStrict() Option {
 		f.useStrict = true
 	}
 }
+
+// EnvConstantCaseStrategy returns an option that configures fig to
+// convert env key names to constant-case naming convention.
+// e.g. converts `app_serverPort` to `APP_SERVER_PORT`.
+//
+//	fig.Load(&cfg, fig.EnvConstantCaseStrategy())
+//
+// If this option is not used then fig builds env key names as explained in UseEnv option.
+func EnvConstantCaseStrategy() Option {
+	return func(f *fig) {
+		f.useConstantCase = true
+	}
+}
