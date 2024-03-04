@@ -1289,6 +1289,35 @@ func Test_fig_setSlice(t *testing.T) {
 	})
 }
 
+func Test_fig_toConstantCase(t *testing.T) {
+	fig := defaultFig()
+
+	testCases := []struct {
+		key      string
+		expected string
+	}{
+		{key: "fig_serviceName", expected: "fig_service_Name"},
+		{key: "fig_USA_test", expected: "fig_USA_test"},
+		{key: "fig_runT", expected: "fig_run_T"},
+		{key: "fig_0_test", expected: "fig_0_test"},
+		{key: "USACountry", expected: "USA_Country"},
+		{key: "helloWORLD", expected: "hello_WORLD"},
+		{key: "USA", expected: "USA"},
+		{key: "___", expected: "___"},
+		{key: "a__b__c", expected: "a__b__c"},
+		{key: "a__B__c", expected: "a__B__c"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.key, func(t *testing.T) {
+			res := fig.toConstantCase(tc.key)
+			if res != tc.expected {
+				t.Errorf("expected %s, got %s", tc.expected, res)
+			}
+		})
+	}
+}
+
 func setenv(t *testing.T, key, value string) {
 	t.Helper()
 	t.Setenv(key, value)

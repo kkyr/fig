@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/pelletier/go-toml/v2"
@@ -112,14 +113,15 @@ func defaultFig() *fig {
 }
 
 type fig struct {
-	filename   string
-	dirs       []string
-	tag        string
-	timeLayout string
-	useEnv     bool
-	useStrict  bool
-	ignoreFile bool
-	envPrefix  string
+	filename        string
+	dirs            []string
+	tag             string
+	timeLayout      string
+	useEnv          bool
+	useConstantCase bool
+	useStrict       bool
+	ignoreFile      bool
+	envPrefix       string
 }
 
 func (f *fig) Load(cfg interface{}) error {
@@ -312,10 +314,46 @@ func (f *fig) setFromEnv(fv reflect.Value, key string) error {
 func (f *fig) formatEnvKey(key string) string {
 	// loggers[0].level --> loggers_0_level
 	key = strings.NewReplacer(".", "_", "[", "_", "]", "").Replace(key)
+	if f.useConstantCase {
+		key = f.toConstantCase(key)
+	}
 	if f.envPrefix != "" {
 		key = fmt.Sprintf("%s_%s", f.envPrefix, key)
 	}
 	return strings.ToUpper(key)
+}
+
+func (f *fig) toConstantCase(key string) string {
+	var b strings.Builder
+	runes := []rune(key)
+
+	for i := 0; i < len(runes); i++ {
+		if !unicode.IsUpper(runes[i]) {
+			b.WriteRune(runes[i])
+			continue
+		}
+
+		if i == 0 {
+			b.WriteRune(runes[i])
+			continue
+		}
+
+		if unicode.IsUpper(runes[i-1]) || !unicode.IsLetter(runes[i-1]) {
+			if len(runes) == i+1 {
+				b.WriteRune(runes[i])
+			} else if unicode.IsLower(runes[i+1]) {
+				b.WriteString("_")
+				b.WriteRune(runes[i])
+			} else {
+				b.WriteRune(runes[i])
+			}
+		} else {
+			b.WriteString("_")
+			b.WriteRune(runes[i])
+		}
+	}
+
+	return b.String()
 }
 
 // setDefaultValue calls setValue but disallows booleans from
