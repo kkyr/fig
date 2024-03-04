@@ -333,24 +333,24 @@ func (f *fig) toConstantCase(key string) string {
 			continue
 		}
 
-		if i == len(runes)-1 {
-			if i-1 >= 0 && unicode.IsLower(runes[i-1]) {
+		if i == 0 {
+			b.WriteRune(runes[i])
+			continue
+		}
+
+		if unicode.IsUpper(runes[i-1]) || !unicode.IsLetter(runes[i-1]) {
+			if len(runes) == i+1 {
+				b.WriteRune(runes[i])
+			} else if unicode.IsLower(runes[i+1]) {
 				b.WriteString("_")
 				b.WriteRune(runes[i])
 			} else {
 				b.WriteRune(runes[i])
 			}
-			continue
-		}
-
-		// Is next letter lower case.
-		if unicode.IsLower(runes[i+1]) {
+		} else {
 			b.WriteString("_")
 			b.WriteRune(runes[i])
-			continue
 		}
-
-		b.WriteRune(runes[i])
 	}
 
 	return b.String()

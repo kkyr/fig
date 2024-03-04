@@ -1300,10 +1300,16 @@ func Test_fig_toConstantCase(t *testing.T) {
 		{key: "fig_USA_test", expected: "fig_USA_test"},
 		{key: "fig_runT", expected: "fig_run_T"},
 		{key: "fig_0_test", expected: "fig_0_test"},
+		{key: "USACountry", expected: "USA_Country"},
+		{key: "helloWORLD", expected: "hello_WORLD"},
+		{key: "USA", expected: "USA"},
+		{key: "___", expected: "___"},
+		{key: "a__b__c", expected: "a__b__c"},
+		{key: "a__B__c", expected: "a__B__c"},
 	}
 
-	for i, tc := range testCases {
-		t.Run(fmt.Sprint(i), func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.key, func(t *testing.T) {
 			res := fig.toConstantCase(tc.key)
 			if res != tc.expected {
 				t.Errorf("expected %s, got %s", tc.expected, res)
