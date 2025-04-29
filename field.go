@@ -139,20 +139,35 @@ func (f *field) name() string {
 // path is a dot separated path consisting of all the names of
 // the field's ancestors starting from the topmost parent all the
 // way down to the field itself.
-func (f *field) path() (path string) {
-	var visit func(f *field)
-	visit = func(f *field) {
+//
+// Squashed structs will omit themselves from the path
+func (f *field) path(tagKey string) (path string) {
+	var visit func(f *field, squashed bool)
+	visit = func(f *field, squashed bool) {
 		if f.parent != nil {
-			visit(f.parent)
+			visit(f.parent, false)
+
+			// Check if we are squashed or not
+			//
+			// type Base struct { Env string }
+			// type Config struct { Base `fig:",squash"`}
+			//
+			// In the above example, path to 'env' should be 'Env', not 'Base.Env'
+			if f.parent.t.Kind() == reflect.Struct {
+				parentField, ok := f.parent.t.FieldByName(f.st.Name)
+				squashed = ok && parentField.Tag.Get(tagKey) == ",squash"
+			}
 		}
-		path += f.name()
+		if !squashed {
+			path += f.name()
+		}
 		// if it's a slice/array we don't want a dot before the slice indexer
 		// e.g. we want A[0].B instead of A.[0].B
 		if f.t.Kind() != reflect.Slice && f.t.Kind() != reflect.Array && f.t.Kind() != reflect.Map {
 			path += "."
 		}
 	}
-	visit(f)
+	visit(f, false)
 	return strings.Trim(path, ".")
 }
 
