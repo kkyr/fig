@@ -186,12 +186,44 @@ func Test_parseTag(t *testing.T) {
 	}
 }
 
+func Test_squashPath(t *testing.T) {
+	cfg := struct {
+		Base struct {
+			Env         string
+			ServiceName string
+			Nested      []struct{ Val string }
+			Logging     struct {
+				Level int
+			}
+		} `fig:",squash"`
+		App struct {
+			Custom string
+		}
+	}{}
+	cfg.Base.Nested = []struct{ Val string }{{}, {}}
+
+	fields := flattenCfg(&cfg, "fig")
+	if len(fields) != 10 {
+		t.Fatalf("len(fields) == %d, expected %d", len(fields), 10)
+	}
+	checkField(t, fields[0], "Base", "")
+	checkField(t, fields[1], "Env", "Env")
+	checkField(t, fields[2], "ServiceName", "ServiceName")
+	checkField(t, fields[3], "Nested", "Nested")
+	checkField(t, fields[4], "Val", "Nested[0].Val")
+	checkField(t, fields[5], "Val", "Nested[1].Val")
+	checkField(t, fields[6], "Logging", "Logging")
+	checkField(t, fields[7], "Level", "Logging.Level")
+	checkField(t, fields[8], "App", "App")
+	checkField(t, fields[9], "Custom", "App.Custom")
+}
+
 func checkField(t *testing.T, f *field, name, path string) {
 	t.Helper()
 	if f.name() != name {
 		t.Errorf("f.name() == %s, expected %s", f.name(), name)
 	}
-	if f.path() != path {
-		t.Errorf("f.path() == %s, expected %s", f.path(), path)
+	if f.path("fig") != path {
+		t.Errorf("f.path() == %s, expected %s", f.path("fig"), path)
 	}
 }

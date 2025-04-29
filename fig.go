@@ -213,7 +213,8 @@ func stringToRegexpHookFunc() mapstructure.DecodeHookFunc {
 	return func(
 		f reflect.Type,
 		t reflect.Type,
-		data interface{}) (interface{}, error) {
+		data interface{},
+	) (interface{}, error) {
 		if f.Kind() != reflect.String {
 			return data, nil
 		}
@@ -264,7 +265,7 @@ func (f *fig) processCfg(cfg interface{}) error {
 
 	for _, field := range fields {
 		if err := f.processField(field); err != nil {
-			errs[field.path()] = err
+			errs[field.path(f.tag)] = err
 		}
 	}
 
@@ -283,7 +284,7 @@ func (f *fig) processField(field *field) error {
 	}
 
 	if f.useEnv {
-		if err := f.setFromEnv(field.v, field.path()); err != nil {
+		if err := f.setFromEnv(field.v, field.path(f.tag)); err != nil {
 			return fmt.Errorf("unable to set from env: %w", err)
 		}
 	}
