@@ -205,6 +205,31 @@ func Test_fig_Load_FileNotFound(t *testing.T) {
 	}
 }
 
+func Test_fig_Load_AllowNoFile(t *testing.T) {
+	fig := defaultFig()
+	fig.filename = "abrakadabra"
+	fig.allowNoFile = true
+	fig.useEnv = true
+	fig.envPrefix = ""
+
+	// Ensure that we still load values via env without a file
+	expectedKind := "this is required"
+	t.Setenv("KIND", expectedKind)
+	t.Setenv("METADATA_MASTER", "true")
+
+	var cfg Pod
+	err := fig.Load(&cfg)
+	if err != nil {
+		t.Fatalf("expected no err, got %v", err)
+	}
+	if cfg.Kind != expectedKind {
+		t.Fatalf("expected %q, got %q", expectedKind, cfg.Kind)
+	}
+	if cfg.Metadata.Master != true {
+		t.Fatalf("expected %t, got %v", true, cfg.Metadata.Master)
+	}
+}
+
 func Test_fig_Load_NonStructPtr(t *testing.T) {
 	cfg := struct {
 		X int
