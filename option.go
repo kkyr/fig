@@ -118,3 +118,17 @@ func UseStrict() Option {
 		f.useStrict = true
 	}
 }
+
+// AllowNoFile returns an option that configures fig to proceed even when no config
+// file is found. Loading defaults and values from environment variables will still
+// work as expected.
+//
+//	fig.Load(&cfg, fig.AllowNoFile())
+//
+// If this option is not used then fig returns [ErrFileNotFound] as soon as none are
+// discovered.
+func AllowNoFile() Option {
+	return func(f *fig) {
+		f.allowNoFile = true
+	}
+}
