@@ -2,6 +2,7 @@ package fig
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -112,14 +113,15 @@ func defaultFig() *fig {
 }
 
 type fig struct {
-	filename   string
-	dirs       []string
-	tag        string
-	timeLayout string
-	useEnv     bool
-	useStrict  bool
-	ignoreFile bool
-	envPrefix  string
+	filename    string
+	dirs        []string
+	tag         string
+	timeLayout  string
+	useEnv      bool
+	useStrict   bool
+	ignoreFile  bool
+	allowNoFile bool
+	envPrefix   string
 }
 
 func (f *fig) Load(cfg interface{}) error {
@@ -127,18 +129,9 @@ func (f *fig) Load(cfg interface{}) error {
 		return fmt.Errorf("cfg must be a pointer to a struct")
 	}
 
-	vals := make(map[string]interface{})
-
-	if !f.ignoreFile {
-		file, err := f.findCfgFile()
-		if err != nil {
-			return err
-		}
-
-		vals, err = f.decodeFile(file)
-		if err != nil {
-			return err
-		}
+	vals, err := f.valsFromFile()
+	if err != nil {
+		return err
 	}
 
 	if err := f.decodeMap(vals, cfg); err != nil {
@@ -146,6 +139,27 @@ func (f *fig) Load(cfg interface{}) error {
 	}
 
 	return f.processCfg(cfg)
+}
+
+func (f *fig) valsFromFile() (map[string]interface{}, error) {
+	vals := make(map[string]interface{})
+	if f.ignoreFile {
+		return vals, nil
+	}
+
+	file, err := f.findCfgFile()
+	if errors.Is(err, ErrFileNotFound) && f.allowNoFile {
+		return vals, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	vals, err = f.decodeFile(file)
+	if err != nil {
+		return nil, err
+	}
+	return vals, nil
 }
 
 func (f *fig) findCfgFile() (path string, err error) {
