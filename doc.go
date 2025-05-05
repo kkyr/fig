@@ -148,6 +148,36 @@ Note: the Server slice must already have members inside it (i.e. from loading of
 
 Maps and map values cannot be populated from the environment.
 
+# Squashing
+
+Fields to nested structs can be flattened by annotating with `fig:",squash"`. Fig
+treats values into these structs as if they were part of the parent.
+
+	type Base struct {
+		Env string `fig:"env"`
+		Logging struct {
+			Level string `fig:"level"`
+		} `fig:"logging"`
+	}
+
+	type Config struct {
+		Base `fig:",squash"`
+		Addr string `fig:"addr"`
+	}
+
+Using the above example, the configuration file would look like:
+
+	env: prod
+	logging:
+	  level: info
+	addr: 0.0.0.0:8080
+
+And similarly, the corresponding environment variables:
+
+	ENV=prod
+	LOGGING_LEVEL=info
+	ADDR=0.0.0.0:8080
+
 # Time
 
 Change the layout fig uses to parse times using `TimeLayout()`.
