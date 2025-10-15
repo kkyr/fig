@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -70,6 +71,11 @@ type StringUnmarshaler interface {
 	UnmarshalString(s string) error
 }
 
+// FileReader is a function type that provides a custom way to read configuration files.
+// It enables preprocessing of configuration files before they are parsed by fig's decoders.
+// If the returned io.Reader implements io.Closer, fig will automatically close it.
+type FileReader func(filePath string) (io.Reader, error)
+
 // Load reads a configuration file and loads it into the given struct. The
 // parameter `cfg` must be a pointer to a struct.
 //
@@ -109,6 +115,7 @@ func defaultFig() *fig {
 		dirs:       []string{DefaultDir},
 		tag:        DefaultTag,
 		timeLayout: DefaultTimeLayout,
+		fileReader: defaultFileReader,
 	}
 }
 
@@ -122,6 +129,7 @@ type fig struct {
 	ignoreFile  bool
 	allowNoFile bool
 	envPrefix   string
+	fileReader  FileReader
 }
 
 func (f *fig) Load(cfg interface{}) error {
@@ -174,11 +182,13 @@ func (f *fig) findCfgFile() (path string, err error) {
 
 // decodeFile reads the file and unmarshalls it using a decoder based on the file extension.
 func (f *fig) decodeFile(file string) (map[string]interface{}, error) {
-	fd, err := os.Open(file)
+	fd, err := f.fileReader(file)
 	if err != nil {
 		return nil, err
 	}
-	defer fd.Close()
+	if closer, ok := fd.(io.Closer); ok {
+		defer closer.Close()
+	}
 
 	vals := make(map[string]interface{})
 
@@ -435,6 +445,10 @@ func (f *fig) setSlice(sv reflect.Value, val string) error {
 	}
 	sv.Set(slice)
 	return nil
+}
+
+func defaultFileReader(filePath string) (io.Reader, error) {
+	return os.Open(filePath)
 }
 
 // trySetFromStringUnmarshaler takes a value fv which is expected to implement the

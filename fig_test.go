@@ -3,6 +3,7 @@ package fig
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -1310,6 +1311,76 @@ func Test_fig_setSlice(t *testing.T) {
 		err := f.setSlice(reflect.ValueOf(in).Elem(), val)
 		if err == nil {
 			t.Fatalf("expected err")
+		}
+	})
+}
+
+func Test_fig_Load_WithFileReader(t *testing.T) {
+	t.Run("custom file reader with preprocessing", func(t *testing.T) {
+		type Config struct {
+			Host   string `fig:"host"`
+			Logger struct {
+				LogLevel string `fig:"log_level"`
+			} `fig:"logger"`
+		}
+
+		// CustomFileReader simulates file preprocessing
+		customReader := func(filePath string) (io.Reader, error) {
+			if filePath != "testdata/valid/server.yaml" {
+				t.Fatalf("unexpected file path: got %s, want %s", filePath, "testdata/valid/server.yaml")
+			}
+			// Simulates preprocessing - replaces original content
+			content := `host: "127.0.0.1"
+logger:
+  log_level: "info"`
+			return strings.NewReader(content), nil
+		}
+
+		var cfg Config
+		err := Load(&cfg, WithFileReader(customReader), File("server.yaml"), Dirs("testdata/valid"))
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		want := Config{
+			Host: "127.0.0.1",
+			Logger: struct {
+				LogLevel string `fig:"log_level"`
+			}{
+				LogLevel: "info",
+			},
+		}
+
+		if !reflect.DeepEqual(want, cfg) {
+			t.Errorf("\nwant %+v\ngot %+v", want, cfg)
+		}
+	})
+
+	t.Run("file reader with closer", func(t *testing.T) {
+		type Config struct {
+			Host   string `fig:"host"`
+			Logger struct {
+				LogLevel string `fig:"log_level"`
+			} `fig:"logger"`
+		}
+
+		// FileReader that returns a real file (implements io.Closer)
+		fileReader := func(filePath string) (io.Reader, error) {
+			return os.Open(filePath)
+		}
+
+		var cfg Config
+		err := Load(&cfg, WithFileReader(fileReader), File("server.yaml"), Dirs("testdata/valid"))
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+
+		// Verifies that real file data was loaded
+		if cfg.Host != "0.0.0.0" {
+			t.Errorf("expected host '0.0.0.0', got %s", cfg.Host)
+		}
+		if cfg.Logger.LogLevel != "debug" {
+			t.Errorf("expected logger.log_level 'debug', got %s", cfg.Logger.LogLevel)
 		}
 	})
 }

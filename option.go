@@ -132,3 +132,38 @@ func AllowNoFile() Option {
 		f.allowNoFile = true
 	}
 }
+
+// WithFileReader returns an option that configures a custom file reader for
+// preprocessing configuration files before they are parsed by fig's decoders.
+//
+// This is useful for scenarios like environment variable substitution, template
+// processing, or custom file formats. The file reader function receives the
+// file path and must return an io.Reader. If the returned reader also
+// implements io.Closer, fig will automatically close it after reading.
+//
+//	fileReader := func(filePath string) (io.Reader, error) {
+//		file, err := os.Open(filePath)
+//		if err != nil {
+//			return nil, err
+//		}
+//		defer file.Close()
+//
+//		content, err := io.ReadAll(file)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		// Expand environment variables in the content
+//		expanded := os.ExpandEnv(string(content))
+//		return strings.NewReader(expanded), nil
+//	}
+//
+//	fig.Load(&cfg, fig.WithFileReader(fileReader))
+//
+// If this option is not used then fig uses the default file reader which
+// opens files directly with os.Open.
+func WithFileReader(fileReader FileReader) Option {
+	return func(f *fig) {
+		f.fileReader = fileReader
+	}
+}

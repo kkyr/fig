@@ -301,6 +301,38 @@ This is not allowed:
 	  Level string `validate:"required" default:"warn"` // will result in an error
 	}
 
+# FileReader
+
+Custom file readers can be used to preprocess configuration files before they are parsed by fig's decoders. This is useful for scenarios like environment variable substitution, template processing, or custom file formats.
+
+	type Config struct {
+	  Host string `fig:"host"`
+	  Port int    `fig:"port"`
+	}
+
+	// Custom file reader that expands environment variables
+	fileReader := func(filePath string) (io.Reader, error) {
+	  file, err := os.Open(filePath)
+	  if err != nil {
+	    return nil, err
+	  }
+	  defer file.Close()
+
+	  content, err := io.ReadAll(file)
+	  if err != nil {
+	    return nil, err
+	  }
+
+	  // Expand environment variables in the content
+	  expanded := os.ExpandEnv(string(content))
+	  return strings.NewReader(expanded), nil
+	}
+
+	var cfg Config
+	err := fig.Load(&cfg, fig.WithFileReader(fileReader))
+
+The file reader function receives the file path and must return an `io.Reader`. If the returned reader also implements `io.Closer`, fig will automatically close it after reading.
+
 # Errors
 
 A wrapped error `ErrFileNotFound` is returned when fig is not able to find a config file to load. This can be useful for instance to fallback to a different configuration loading mechanism.
