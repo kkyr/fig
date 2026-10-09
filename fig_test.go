@@ -1004,6 +1004,92 @@ func Test_fig_setDefaultValue(t *testing.T) {
 	}
 }
 
+func Test_fig_Load_IntegerRange(t *testing.T) {
+	type signedPort int16
+	type unsignedPort uint16
+
+	signedBounds := map[int][]string{
+		8:  {"-128", "127", "-129", "128"},
+		16: {"-32768", "32767", "-32769", "32768"},
+		32: {"-2147483648", "2147483647", "-2147483649", "2147483648"},
+		64: {"-9223372036854775808", "9223372036854775807", "-9223372036854775809", "9223372036854775808"},
+	}
+	unsignedBounds := map[int][]string{
+		8:  {"0", "255", "-1", "256"},
+		16: {"0", "65535", "-1", "65536"},
+		32: {"0", "4294967295", "-1", "4294967296"},
+		64: {"0", "18446744073709551615", "-1", "18446744073709551616"},
+	}
+
+	for _, zero := range []interface{}{
+		int(0), int8(0), int16(0), int32(0), int64(0),
+		uint(0), uint8(0), uint16(0), uint32(0), uint64(0),
+		signedPort(0), unsignedPort(0),
+	} {
+		typ := reflect.TypeOf(zero)
+		bounds := signedBounds[typ.Bits()]
+		if typ.Kind() >= reflect.Uint && typ.Kind() <= reflect.Uint64 {
+			bounds = unsignedBounds[typ.Bits()]
+		}
+
+		for _, source := range []string{"default", "env"} {
+			for _, shape := range []string{"scalar", "pointer", "slice"} {
+				for i, input := range bounds {
+					t.Run(fmt.Sprintf("%s/%s/%s/%s", typ, source, shape, input), func(t *testing.T) {
+						fieldType := typ
+						value := input
+						switch shape {
+						case "pointer":
+							fieldType = reflect.PointerTo(typ)
+						case "slice":
+							fieldType = reflect.SliceOf(typ)
+							value = "[" + input + "]"
+						}
+
+						field := reflect.StructField{Name: "Value", Type: fieldType}
+						opts := []Option{IgnoreFile()}
+						if source == "default" {
+							field.Tag = reflect.StructTag(fmt.Sprintf("default:%q", value))
+						} else {
+							t.Setenv("FIG_INTEGER_RANGE_VALUE", value)
+							opts = append(opts, UseEnv("FIG_INTEGER_RANGE"))
+						}
+
+						cfg := reflect.New(reflect.StructOf([]reflect.StructField{field}))
+						err := Load(cfg.Interface(), opts...)
+						if i >= 2 {
+							if err == nil {
+								t.Fatalf("Load() accepted %s for %s", input, fieldType)
+							}
+							if !strings.Contains(err.Error(), "Value: unable to set") {
+								t.Fatalf("missing field context in error: %v", err)
+							}
+							return
+						}
+						if err != nil {
+							t.Fatalf("Load() rejected %s for %s: %v", input, fieldType, err)
+						}
+
+						got := cfg.Elem().Field(0)
+						switch shape {
+						case "pointer":
+							got = got.Elem()
+						case "slice":
+							if got.Len() != 1 {
+								t.Fatalf("want one element, got %d", got.Len())
+							}
+							got = got.Index(0)
+						}
+						if fmt.Sprint(got.Interface()) != input {
+							t.Fatalf("want %s, got %v", input, got.Interface())
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
 func Test_fig_setValue(t *testing.T) {
 	fig := defaultFig()
 

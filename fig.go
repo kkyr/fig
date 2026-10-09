@@ -379,14 +379,14 @@ func (f *fig) setValue(fv reflect.Value, val string) error {
 			}
 			fv.Set(reflect.ValueOf(d))
 		} else {
-			i, err := strconv.ParseInt(val, 10, 64)
+			i, err := strconv.ParseInt(val, 10, fv.Type().Bits())
 			if err != nil {
 				return err
 			}
 			fv.SetInt(i)
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		i, err := strconv.ParseUint(val, 10, 64)
+		i, err := strconv.ParseUint(val, 10, fv.Type().Bits())
 		if err != nil {
 			return err
 		}
